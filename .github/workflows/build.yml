@@ -3,33 +3,25 @@ name: Build Photo Cleaner
 on:
   push:
     branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build for ${{ matrix.os }}
+    name: ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - os: windows-latest
-            suffix: .exe
-            asset_name: PhotoCleaner-Windows-x64
-          - os: ubuntu-latest
-            suffix: .bin
-            asset_name: PhotoCleaner-Linux-x64
-          - os: macos-latest
-            suffix: .dmg
-            asset_name: PhotoCleaner-macOS-arm64
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 设置 Python
+      - name: 设置 Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+          cache: 'pip'
 
       - name: 安装依赖
         run: |
@@ -37,30 +29,30 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: 构建可执行文件 (Windows)
+      - name: 构建 (Windows)
         if: runner.os == 'Windows'
         run: |
-          pyinstaller build.spec --noconfirm
+          pyinstaller --onefile --name "PhotoCleaner" --add-data "templates;templates" --hidden-import flask --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageOps --hidden-import PIL.ExifTags --hidden-import imagehash --hidden-import numpy --hidden-import scipy --hidden-import scipy.ndimage --hidden-import PyWavelets --hidden-import webview --hidden-import webview.platforms.win32 --hidden-import bottle --console main.py
           mkdir artifacts
-          copy dist\PhotoCleaner\PhotoCleaner.exe artifacts\PhotoCleaner-Windows-x64.exe
+          copy dist\PhotoCleaner.exe artifacts\
         shell: cmd
 
-      - name: 构建可执行文件 (macOS)
+      - name: 构建 (macOS)
         if: runner.os == 'macOS'
         run: |
-          pyinstaller build.spec --noconfirm
+          pyinstaller --onefile --name "PhotoCleaner" --add-data "templates:templates" --hidden-import flask --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageOps --hidden-import PIL.ExifTags --hidden-import imagehash --hidden-import numpy --hidden-import scipy --hidden-import scipy.ndimage --hidden-import PyWavelets --hidden-import webview --hidden-import webview.platforms.cocoa --hidden-import bottle --console main.py
           mkdir -p artifacts
-          cp dist/PhotoCleaner/PhotoCleaner artifacts/PhotoCleaner-macOS-arm64
+          cp dist/PhotoCleaner artifacts/
 
-      - name: 构建可执行文件 (Linux)
+      - name: 构建 (Linux)
         if: runner.os == 'Linux'
         run: |
-          pyinstaller build.spec --noconfirm
+          pyinstaller --onefile --name "PhotoCleaner" --add-data "templates:templates" --hidden-import flask --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageOps --hidden-import PIL.ExifTags --hidden-import imagehash --hidden-import numpy --hidden-import scipy --hidden-import scipy.ndimage --hidden-import PyWavelets --hidden-import webview --hidden-import webview.platforms.gtk --hidden-import bottle --console main.py
           mkdir -p artifacts
-          cp dist/PhotoCleaner/PhotoCleaner artifacts/PhotoCleaner-Linux-x64
+          cp dist/PhotoCleaner artifacts/
 
-      - name: 上传构建产物
+      - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.asset_name }}
-          path: artifacts/*
+          name: PhotoCleaner-${{ runner.os }}
+          path: artifacts/
