@@ -34,7 +34,8 @@ app = Flask(__name__,
 
 SCAN_DIR = os.path.expanduser("~")
 THRESHOLD = 0.85  # similarity threshold (0-1)
-IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp', '.heic', '.heif'}
+IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp', '.heic', '.heif',
+                     '.arw', '.cr2', '.cr3', '.nef', '.nrw', '.dng', '.orf', '.raf', '.rw2', '.srw'}
 HASH_SIZE = 16  # perceptual hash size (larger = more detail)
 
 # ─── State ─────────────────────────────────────────────────────────────────────
@@ -46,15 +47,50 @@ scan_state = {
     "error": None,
 }
 
+# ─── RAW image support ───────────────────────────────────────────────────────
+
+RAW_EXTENSIONS = {'.arw', '.cr2', '.cr3', '.nef', '.nrw', '.dng', '.orf', '.raf', '.rw2', '.srw'}
+
+def open_image_safe(image_path):
+    """Open an image file, supporting both regular images and RAW formats."""
+    ext = Path(image_path).suffix.lower()
+    if ext in RAW_EXTENSIONS:
+        return open_raw_image(image_path)
+    return Image.open(image_path)
+
+
+def open_raw_image(image_path):
+    """Open a RAW photo using rawpy, fall back to Pillow if unavailable."""
+    try:
+        import rawpy
+        with rawpy.imread(image_path) as raw:
+            rgb = raw.postprocess(
+                use_camera_wb=True,
+                half_size=True,
+                no_auto_bright=False,
+                output_bps=8,
+            )
+            return Image.fromarray(rgb)
+    except ImportError:
+        # rawpy not installed, try Pillow as fallback
+        return Image.open(image_path)
+    except Exception:
+        # RAW decode failed, try Pillow as last resort
+        try:
+            return Image.open(image_path)
+        except Exception:
+            raise
+
+
 # ─── Image Hashing ─────────────────────────────────────────────────────────────
 
 def compute_phash(image_path):
-    """Compute perceptual hash for an image file."""
+    """Compute perceptual hash for an image file (supports RAW formats)."""
     try:
-        img = Image.open(image_path)
+        img = open_image_safe(image_path)
         img = ImageOps.exif_transpose(img)
         if img is None:
-            img = Image.open(image_path)
+            img = open_image_safe(image_path)
         img = img.convert("RGB")
         return imagehash.phash(img, hash_size=HASH_SIZE)
     except Exception as e:
@@ -87,9 +123,10 @@ def find_images(root_dir):
 # ─── Keep Strategy ────────────────────────────────────────────────────────────
 
 def score_sharpness(image_path):
-    """Estimate image sharpness using Laplacian variance. Higher = sharper."""
+    """Estimate image sharpness using Laplacian variance. Higher = sharper.
+       Supports RAW formats."""
     try:
-        img = Image.open(image_path)
+        img = open_image_safe(image_path)
         img = img.convert("L")  # Grayscale
         import numpy as np
         from scipy import ndimage
@@ -100,9 +137,9 @@ def score_sharpness(image_path):
 
 
 def score_exif_richness(image_path):
-    """Count EXIF fields as a proxy for information richness."""
+    """Count EXIF fields as a proxy for information richness. Supports RAW."""
     try:
-        img = Image.open(image_path)
+        img = open_image_safe(image_path)
         exif = img.getexif()
         count = len([k for k in exif.keys() if k != 0x927C and k != 0x9286])
         # Also count GPS sub-IFD fields
@@ -218,9 +255,10 @@ def scan_directory(root_dir, threshold, strategy="largest", progress_callback=No
 # ─── EXIF & Organize ──────────────────────────────────────────────────────────
 
 def read_exif_date(image_path):
-    """Extract DateTimeOriginal from EXIF, fall back to file modification time."""
+    """Extract DateTimeOriginal from EXIF, fall back to file modification time.
+       Supports RAW formats through Pillow's EXIF parser (works for most RAW files)."""
     try:
-        img = Image.open(image_path)
+        img = open_image_safe(image_path)
         exif = img.getexif()
         if exif:
             dt_str = exif.get(0x9003)  # DateTimeOriginal
@@ -260,9 +298,9 @@ def dms_to_decimal(dms, ref):
 
 
 def read_exif_gps(image_path):
-    """Extract GPS coordinates from EXIF."""
+    """Extract GPS coordinates from EXIF (supports RAW formats)."""
     try:
-        img = Image.open(image_path)
+        img = open_image_safe(image_path)
         exif = img.getexif()
         if not exif:
             return None
@@ -526,7 +564,7 @@ def scan_status():
 
 @app.route("/api/thumbnail")
 def thumbnail():
-    """Serve a resized thumbnail of an image for the web UI."""
+    """Serve a resized thumbnail of an image for the web UI (supports RAW)."""
     path = request.args.get("path", "")
     size = request.args.get("size", 300, type=int)
 
@@ -534,10 +572,10 @@ def thumbnail():
         return "", 404
 
     try:
-        img = Image.open(path)
+        img = open_image_safe(path)
         img = ImageOps.exif_transpose(img)
         if img is None:
-            img = Image.open(path)
+            img = open_image_safe(path)
         img.thumbnail((size, size), Image.LANCZOS)
         buf = io.BytesIO()
         img.save(buf, format="JPEG", quality=85)
