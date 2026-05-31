@@ -307,6 +307,22 @@ def scan_directory(root_dir, threshold, strategy="largest", progress_callback=No
     groups, raw_jpg_pairs = cluster_similar(hashes, threshold, strategy)
 
     similar_count = sum(len(g["files"]) for g in groups)
+
+    # ── Storage stats ──
+    deletable_paths = []
+    for g in groups:
+        keep = g["keep_index"]
+        for pi, path in enumerate(g["files"]):
+            if pi != keep:
+                deletable_paths.append(path)
+
+    deletable_size = sum(os.path.getsize(p) for p in deletable_paths if os.path.exists(p))
+    pair_raw_size = sum(os.path.getsize(r) for r, _ in raw_jpg_pairs if os.path.exists(r))
+    pair_jpg_size = sum(os.path.getsize(j) for _, j in raw_jpg_pairs if os.path.exists(j))
+    # For pairs: delete JPG only (keep RAW)
+    deletable_size += pair_jpg_size
+    deletable_paths.extend(j for _, j in raw_jpg_pairs)
+
     return {
         "groups": groups,
         "raw_jpg_pairs": [{"raw": r, "jpg": j} for r, j in raw_jpg_pairs],
@@ -315,6 +331,12 @@ def scan_directory(root_dir, threshold, strategy="largest", progress_callback=No
         "similar_groups": len(groups),
         "similar_count": similar_count,
         "strategy": strategy,
+        "storage": {
+            "deletable_count": len(deletable_paths),
+            "deletable_size": deletable_size,
+            "raw_jpg_pairs_count": len(raw_jpg_pairs),
+            "pair_jpg_size": pair_jpg_size,
+        },
     }
 
 
@@ -569,6 +591,250 @@ def organize_execute():
         "errors": errors,
         "output_dir": output_dir,
         "total_organized": len(organized),
+    })
+
+
+# ─── Feature: Orphan Files ────────────────────────────────────────────
+
+SIDECAR_EXTENSIONS = {'.xmp', '.pp3', '.dop', '.sidecar', '.hdr'}
+
+def detect_orphan_files(root_dir):
+    """Find orphan RAW files (no matching JPEG) and orphan sidecars (no matching photo)."""
+    all_images = find_images(root_dir)
+    all_files = list(Path(root_dir).expanduser().resolve().rglob("*"))
+    all_paths = {str(f) for f in all_files if f.is_file()}
+
+    # Build set of all image stems (without extension)
+    image_stems = set()
+    raw_files = []
+    jpg_files = []
+    sidecar_files = []
+
+    for path_str in all_images:
+        p = Path(path_str)
+        ext = p.suffix.lower()
+        if ext in RAW_EXTENSIONS:
+            raw_files.append(path_str)
+            image_stems.add(p.stem)
+        else:
+            jpg_files.append(path_str)
+            image_stems.add(p.stem)
+
+    # Find sidecar files
+    for path_str in all_paths:
+        ext = Path(path_str).suffix.lower()
+        if ext in SIDECAR_EXTENSIONS:
+            sidecar_files.append(path_str)
+
+    # Orphan RAWs = RAW files whose stem has no matching non-RAW image
+    raw_stems = {Path(p).stem for p in raw_files}
+    jpg_stems = {Path(p).stem for p in jpg_files}
+    orphan_raws = [p for p in raw_files if Path(p).stem not in jpg_stems]
+
+    # Orphan sidecars = sidecar files whose stem has no matching image
+    orphan_sidecars = [p for p in sidecar_files if Path(p).stem not in image_stems]
+
+    # Orphan JPEGs = JPEGs whose stem has no matching RAW
+    orphan_jpegs = [p for p in jpg_files if Path(p).stem not in raw_stems]
+
+    orphan_raw_size = sum(os.path.getsize(p) for p in orphan_raws if os.path.exists(p))
+    orphan_sidecar_size = sum(os.path.getsize(p) for p in orphan_sidecars if os.path.exists(p))
+    orphan_jpeg_size = sum(os.path.getsize(p) for p in orphan_jpegs if os.path.exists(p))
+
+    return {
+        "orphan_raws": orphan_raws,
+        "orphan_raws_count": len(orphan_raws),
+        "orphan_raws_size": orphan_raw_size,
+        "orphan_sidecars": orphan_sidecars,
+        "orphan_sidecars_count": len(orphan_sidecars),
+        "orphan_sidecars_size": orphan_sidecar_size,
+        "orphan_jpegs": orphan_jpegs,
+        "orphan_jpegs_count": len(orphan_jpegs),
+        "orphan_jpegs_size": orphan_jpeg_size,
+        "total_orphan_count": len(orphan_raws) + len(orphan_sidecars) + len(orphan_jpegs),
+        "total_orphan_size": orphan_raw_size + orphan_sidecar_size + orphan_jpeg_size,
+    }
+
+
+@app.route("/api/orphan/detect", methods=["POST"])
+def orphan_detect():
+    """Detect orphan files in a directory."""
+    data = request.get_json(silent=True) or {}
+    scan_dir = data.get("dir", SCAN_DIR)
+    result = detect_orphan_files(scan_dir)
+    return jsonify(result)
+
+
+@app.route("/api/orphan/cleanup", methods=["POST"])
+def orphan_cleanup():
+    """Move orphan files to trash."""
+    data = request.get_json(silent=True) or {}
+    scan_dir = data.get("dir", SCAN_DIR)
+
+    result = detect_orphan_files(scan_dir)
+    all_orphans = result["orphan_raws"] + result["orphan_sidecars"] + result["orphan_jpegs"]
+
+    moved = []
+    errors = []
+    for path in all_orphans:
+        try:
+            if os.path.isfile(path):
+                trash_fn(path)  # uses the platform-specific trash function
+                moved.append(path)
+        except Exception as e:
+            errors.append({"path": path, "error": str(e)})
+
+    return jsonify({"moved_to_trash": moved, "errors": errors, "total": len(moved)})
+
+
+# ─── Feature: Cull Mode (快速筛选) ───────────────────────────────────
+
+# In-memory cache for the latest scan's cull data
+_cull_state = {
+    "groups": None,
+    "current_idx": 0,
+    "decisions": {},  # group_idx -> {"keep": path, "delete": [path, ...]}
+}
+
+
+def trash_fn(path):
+    """Platform-appropriate trash function."""
+    if sys.platform == "darwin":
+        _move_to_trash_macos(path)
+    elif sys.platform == "win32":
+        _move_to_trash_windows(path)
+    else:
+        _move_to_trash_linux(path)
+
+
+@app.route("/api/cull/start", methods=["POST"])
+def cull_start():
+    """Initialize cull mode from the last scan results."""
+    global _cull_state
+    results = scan_state.get("results")
+    if not results or not results.get("groups"):
+        return jsonify({"error": "No scan results available. Run a scan first."}), 400
+
+    _cull_state["groups"] = results["groups"]
+    _cull_state["current_idx"] = 0
+    _cull_state["decisions"] = {}
+
+    if len(results["groups"]) == 0:
+        return jsonify({"total": 0, "done": True})
+
+    return jsonify({
+        "total": len(results["groups"]),
+        "current": 0,
+        "group": _format_cull_group(results["groups"][0], 0),
+    })
+
+
+def _format_cull_group(group, idx):
+    """Format a group for cull mode response."""
+    files = group["files"]
+    keep_path = files[group["keep_index"]]
+    others = [p for i, p in enumerate(files) if i != group["keep_index"]]
+    return {
+        "index": idx,
+        "files": [
+            {
+                "path": p,
+                "name": Path(p).name,
+                "size": os.path.getsize(p) if os.path.exists(p) else 0,
+                "is_keep": p == keep_path,
+            }
+            for p in files
+        ],
+        "keep_path": keep_path,
+    }
+
+
+@app.route("/api/cull/next", methods=["POST"])
+def cull_next():
+    """Get the next unsolved group, or mark current group's decision."""
+    global _cull_state
+    data = request.get_json(silent=True) or {}
+    decision = data.get("decision")  # "keep_current" or {"keep": "path/to/file"}
+
+    groups = _cull_state["groups"]
+    if groups is None:
+        return jsonify({"error": "Cull mode not started"}), 400
+
+    idx = _cull_state["current_idx"]
+    if idx < len(groups):
+        current_group = groups[idx]
+        # Record decision
+        if decision == "keep_current":
+            _cull_state["decisions"][idx] = {
+                "keep": current_group["files"][current_group["keep_index"]],
+                "delete": [p for i, p in enumerate(current_group["files"])
+                           if i != current_group["keep_index"]],
+            }
+        elif isinstance(decision, dict) and "keep" in decision:
+            keep_path = decision["keep"]
+            _cull_state["decisions"][idx] = {
+                "keep": keep_path,
+                "delete": [p for p in current_group["files"] if p != keep_path],
+            }
+
+    # Move to next unsolved group or skip solved ones
+    next_idx = idx + 1
+    while next_idx < len(groups):
+        if next_idx not in _cull_state["decisions"]:
+            break
+        next_idx += 1
+
+    if next_idx >= len(groups):
+        _cull_state["current_idx"] = next_idx
+        return jsonify({"done": True, "total": len(groups)})
+
+    _cull_state["current_idx"] = next_idx
+    return jsonify({
+        "done": False,
+        "total": len(groups),
+        "current": next_idx,
+        "group": _format_cull_group(groups[next_idx], next_idx),
+    })
+
+
+@app.route("/api/cull/apply", methods=["POST"])
+def cull_apply():
+    """Apply all cull decisions: move deleted files to trash."""
+    global _cull_state
+    decisions = _cull_state.get("decisions", {})
+    if not decisions:
+        return jsonify({"error": "No decisions to apply"}), 400
+
+    to_delete = []
+    for idx, dec in decisions.items():
+        to_delete.extend(dec["delete"])
+
+    moved = []
+    errors = []
+    for path in to_delete:
+        try:
+            if os.path.isfile(path):
+                trash_fn(path)
+                moved.append(path)
+        except Exception as e:
+            errors.append({"path": path, "error": str(e)})
+
+    _cull_state = {"groups": None, "current_idx": 0, "decisions": {}}
+
+    return jsonify({"moved_to_trash": moved, "errors": errors, "total": len(moved)})
+
+
+@app.route("/api/cull/status")
+def cull_status():
+    """Get current cull mode status."""
+    global _cull_state
+    groups = _cull_state["groups"]
+    total = len(groups) if groups else 0
+    solved = len(_cull_state["decisions"])
+    return jsonify({
+        "total": total,
+        "solved": solved,
+        "remaining": total - solved,
     })
 
 

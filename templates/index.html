@@ -687,6 +687,147 @@
         }
 
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ─── Storage Dashboard ─── */
+        .storage-dashboard {
+            background: var(--bg-card);
+            border: 1px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 0 30px rgba(108,92,231,0.08);
+        }
+        .storage-dashboard .sd-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            color: var(--text);
+        }
+        .storage-dashboard .sd-title span { color: var(--accent-light); }
+        .storage-dashboard .sd-rows { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+        .storage-dashboard .sd-row {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 14px; color: var(--text-muted);
+        }
+        .storage-dashboard .sd-row .sd-icon { width: 20px; text-align: center; }
+        .storage-dashboard .sd-row .sd-label { min-width: 140px; }
+        .storage-dashboard .sd-row .sd-value { font-weight: 600; color: var(--text); margin-left: auto; }
+        .storage-dashboard .sd-row .sd-value.danger { color: var(--danger); }
+        .storage-dashboard .sd-row .sd-value.success { color: var(--success); }
+        .storage-dashboard .sd-row.sd-total {
+            padding-top: 10px; border-top: 1px solid var(--border); margin-top: 4px;
+        }
+        .storage-dashboard .sd-row.sd-total .sd-value { font-size: 16px; color: var(--accent-light); }
+        .storage-dashboard .sd-actions {
+            display: flex; gap: 10px; flex-wrap: wrap;
+        }
+
+        /* ─── Cull Mode ─── */
+        #cullModeView {
+            display: none;
+            position: fixed; inset: 0; z-index: 800;
+            background: var(--bg);
+            flex-direction: column;
+            padding: 24px;
+        }
+        #cullModeView.active { display: flex; }
+        .cull-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding-bottom: 16px; border-bottom: 1px solid var(--border);
+        }
+        .cull-header .cull-title { font-size: 20px; font-weight: 700; }
+        .cull-header .cull-progress { font-size: 15px; color: var(--text-muted); }
+        .cull-body {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            gap: 24px; padding: 24px 0; min-height: 0;
+        }
+        .cull-keeper-area {
+            flex: 1; max-width: 50%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 16px; position: relative; min-height: 400px;
+        }
+        .cull-keeper-area .cull-keeper-badge {
+            position: absolute; top: 12px; left: 12px;
+            padding: 4px 14px; background: var(--success); color: #fff;
+            font-size: 13px; font-weight: 700; border-radius: 20px;
+            z-index: 2;
+        }
+        .cull-keeper-area img {
+            max-width: 100%; max-height: 80%;
+            object-fit: contain; border-radius: 8px;
+        }
+        .cull-keeper-area .cull-file-name {
+            margin-top: 8px; font-size: 12px; color: var(--text-muted); text-align: center;
+        }
+        .cull-strip-area {
+            width: 240px; height: 100%;
+            display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
+            padding: 4px;
+        }
+        .cull-strip-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 8px; border-radius: 8px;
+            background: var(--bg-card); border: 2px solid var(--border);
+            cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+        }
+        .cull-strip-item:hover { border-color: var(--text-muted); }
+        .cull-strip-item.selected { border-color: var(--accent); background: rgba(108,92,231,0.1); }
+        .cull-strip-item img {
+            width: 48px; height: 48px; object-fit: cover; border-radius: 4px;
+            background: var(--bg-input); flex-shrink: 0;
+        }
+        .cull-strip-item .cull-strip-name {
+            font-size: 11px; color: var(--text-muted); flex: 1;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .cull-strip-item .cull-strip-size {
+            font-size: 10px; color: var(--text-muted);
+        }
+        .cull-footer {
+            padding-top: 16px; border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center; gap: 24px;
+            flex-wrap: wrap;
+        }
+        .cull-footer .cull-key-hint {
+            font-size: 13px; color: var(--text-muted);
+            display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+        }
+        .cull-footer .cull-key-hint kbd {
+            display: inline-block; padding: 2px 8px;
+            background: var(--bg-input); border: 1px solid var(--border);
+            border-radius: 4px; font-size: 11px; font-family: inherit; color: var(--text);
+        }
+        .cull-summary {
+            text-align: center; padding: 40px;
+        }
+        .cull-summary h2 { font-size: 24px; margin-bottom: 12px; }
+        .cull-summary p { font-size: 16px; color: var(--text-muted); margin-bottom: 24px; }
+        .cull-summary .cull-summary-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+        /* ─── Orphan Tab ─── */
+        .orphan-input-row {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .orphan-category {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 16px 20px; margin-bottom: 12px;
+        }
+        .orphan-category .oc-header {
+            display: flex; align-items: center; gap: 10px; margin-bottom: 8px;
+        }
+        .orphan-category .oc-header .oc-icon { font-size: 16px; }
+        .orphan-category .oc-header .oc-title { font-size: 15px; font-weight: 600; }
+        .orphan-category .oc-header .oc-count { font-size: 14px; color: var(--text-muted); margin-left: auto; }
+        .orphan-category .oc-files {
+            font-size: 12px; color: var(--text-muted); line-height: 1.8;
+            margin-top: 6px; max-height: 120px; overflow-y: auto;
+        }
+        .orphan-category .oc-files span { display: inline-block; margin-right: 12px; }
+        .orphan-total {
+            font-size: 16px; font-weight: 700; padding: 14px 0;
+            text-align: center; color: var(--accent-light);
+        }
     </style>
 </head>
 <body>
@@ -702,6 +843,7 @@
     <div class="tab-bar">
         <button class="tab-btn active" onclick="switchTab('cleanup')" id="tabBtnCleanup">相似清理</button>
         <button class="tab-btn" onclick="switchTab('organize')" id="tabBtnOrganize">归类整理</button>
+        <button class="tab-btn" onclick="switchTab('orphan')" id="tabBtnOrphan">孤立文件</button>
     </div>
     <div class="header-controls" id="headerControlsCleanup">
         <div class="dir-picker">
@@ -725,6 +867,12 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
             扫描
         </button>
+    </div>
+    <div class="header-controls" id="headerControlsOrphan" style="display:none;">
+        <div class="dir-picker">
+            <input type="text" id="orphanDirHeader" placeholder="扫描目录（默认 ~）" value="~" readonly style="font-size:13px;">
+        </div>
+        <span style="font-size:13px;color:var(--text-muted);">扫描孤立 RAW / JPG / 侧边栏文件</span>
     </div>
     <div class="header-controls" id="headerControlsOrganize" style="display:none;">
         <div class="dir-picker">
@@ -820,6 +968,100 @@
         </div>
     </div>
 
+    <!-- ─── Cull Mode (快速筛选) Fullscreen View ─── -->
+    <div id="cullModeView">
+        <div class="cull-header">
+            <div class="cull-title">⚡ 快速筛选</div>
+            <div class="cull-progress" id="cullProgress">组 1 / 1</div>
+        </div>
+        <div class="cull-body" id="cullBody">
+            <!-- Keeper area -->
+            <div class="cull-keeper-area" id="cullKeeperArea">
+                <div class="cull-keeper-badge">✓ 保留</div>
+                <img id="cullKeeperImg" src="" alt="">
+                <div class="cull-file-name" id="cullKeeperName"></div>
+            </div>
+            <!-- Strip area -->
+            <div class="cull-strip-area" id="cullStripArea"></div>
+        </div>
+        <div class="cull-footer">
+            <div class="cull-key-hint">
+                <span><kbd>→</kbd> 或 <kbd>K</kbd> 保留当前</span>
+                <span><kbd>1-9</kbd> 选择保留照片</span>
+                <span><kbd>S</kbd> 跳过</span>
+                <span><kbd>Esc</kbd> 退出</span>
+            </div>
+        </div>
+    </div>
+    <!-- ─── Cull Mode Summary (hidden, replaces body when done) ─── -->
+    <div id="cullSummaryView" style="display:none;">
+        <div class="cull-summary">
+            <h2>🎉 筛选完成</h2>
+            <p id="cullSummaryText">你已经完成了 0 组筛选，共标记 0 张删除</p>
+            <div class="cull-summary-actions">
+                <button class="btn btn-danger" onclick="cullApply()">🗑️ 应用更改 → 移到废纸篓</button>
+                <button class="btn btn-outline" onclick="exitCullMode()">返回主界面</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Tab 3: 孤立文件 ─── -->
+    <div class="tab-content" id="tabOrphan">
+        <div class="orphan-input-row">
+            <div class="dir-picker">
+                <input type="text" id="orphanDir" placeholder="扫描目录（默认 ~）" value="~" readonly>
+                <button class="btn btn-outline" onclick="browseDir('orphanDir')" title="选择目录">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                    浏览
+                </button>
+            </div>
+            <button class="btn btn-primary" id="orphanScanBtn" onclick="startOrphanScan()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                扫描孤立文件
+            </button>
+        </div>
+        <!-- Orphan Progress -->
+        <div id="orphanProgressArea" style="display:none;">
+            <div class="progress-bar">
+                <div class="fill" id="orphanProgressFill" style="width:0%"></div>
+            </div>
+            <div class="progress-text" id="orphanProgressText">正在扫描...</div>
+        </div>
+        <!-- Orphan Results -->
+        <div id="orphanResults" style="display:none;">
+            <div class="orphan-category" style="border-left:3px solid var(--warning);">
+                <div class="oc-header">
+                    <span class="oc-icon">🟡</span>
+                    <span class="oc-title">孤立 RAW（无对应 JPG）</span>
+                    <span class="oc-count" id="orphanRawCount">0 个文件</span>
+                </div>
+                <div class="oc-files" id="orphanRawFiles"></div>
+            </div>
+            <div class="orphan-category" style="border-left:3px solid #ff922b;">
+                <div class="oc-header">
+                    <span class="oc-icon">🟠</span>
+                    <span class="oc-title">孤立侧边栏文件（XMP 等）</span>
+                    <span class="oc-count" id="orphanSidecarCount">0 个文件</span>
+                </div>
+                <div class="oc-files" id="orphanSidecarFiles"></div>
+            </div>
+            <div class="orphan-category" style="border-left:3px solid var(--accent);">
+                <div class="oc-header">
+                    <span class="oc-icon">🔵</span>
+                    <span class="oc-title">孤立 JPG（无对应 RAW）</span>
+                    <span class="oc-count" id="orphanJpegCount">0 个文件</span>
+                </div>
+                <div class="oc-files" id="orphanJpegFiles"></div>
+            </div>
+            <div class="orphan-total" id="orphanTotal">预计可释放: 0 个文件 (0 B)</div>
+            <div style="text-align:center;margin-top:12px;">
+                <button class="btn btn-danger" id="orphanCleanupBtn" onclick="confirmOrphanCleanup()" disabled>
+                    🗑️ 清理所有孤立文件
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ─── Tab 2: 归类整理 ─── -->
     <div class="tab-content" id="tabOrganize">
         <!-- Stats -->
@@ -911,6 +1153,7 @@
 
         document.getElementById('headerControlsCleanup').style.display = tab === 'cleanup' ? '' : 'none';
         document.getElementById('headerControlsOrganize').style.display = tab === 'organize' ? '' : 'none';
+        document.getElementById('headerControlsOrphan').style.display = tab === 'orphan' ? '' : 'none';
     }
 
     // ─── Threshold ───
@@ -1011,6 +1254,16 @@
         document.getElementById('statGroups').textContent = results.similar_groups;
         document.getElementById('statCleanable').textContent = results.similar_count - results.similar_groups;
         document.getElementById('statsBar').style.display = 'flex';
+
+        // ─── Storage Dashboard ───
+        const storage = results.storage;
+        if (storage) {
+            renderStorageDashboard(storage);
+        } else {
+            // Remove any existing dashboard
+            const existing = document.getElementById('storageDashboard');
+            if (existing) existing.remove();
+        }
 
         // Count RAW+JPG pairs
         const pairs = results.raw_jpg_pairs || [];
@@ -1245,9 +1498,15 @@
     // ─── Sync directory inputs ───
     document.getElementById('scanDir').addEventListener('input', function() {
         document.getElementById('organizeDir').value = this.value;
+        document.getElementById('orphanDir').value = this.value;
+        const h = document.getElementById('orphanDirHeader');
+        if (h) h.value = this.value;
     });
     document.getElementById('organizeDir').addEventListener('input', function() {
         document.getElementById('scanDir').value = this.value;
+        document.getElementById('orphanDir').value = this.value;
+        const h = document.getElementById('orphanDirHeader');
+        if (h) h.value = this.value;
     });
 
     // ─── Organize: Preview ───
@@ -1543,14 +1802,425 @@
         const input = document.getElementById(currentDirInput);
         input.value = path;
 
-        // Sync both inputs if it's the main scan dir
-        if (currentDirInput === 'scanDir' || currentDirInput === 'organizeDir') {
+        // Sync inputs
+        if (currentDirInput === 'scanDir' || currentDirInput === 'organizeDir' || currentDirInput === 'orphanDir') {
             document.getElementById('scanDir').value = path;
             document.getElementById('organizeDir').value = path;
+            document.getElementById('orphanDir').value = path;
+            const h = document.getElementById('orphanDirHeader');
+            if (h) h.value = path;
         }
 
         closeDirTree();
         showToast('已选择: ' + path, 'info');
+    }
+
+    // ─── Orphan dir sync also ───
+    document.getElementById('orphanDir').addEventListener('input', function() {
+        document.getElementById('scanDir').value = this.value;
+        document.getElementById('organizeDir').value = this.value;
+    });
+
+    // ═══════════════════════════════════════════════════════
+    //  FEATURE 1: Storage Dashboard
+    // ═══════════════════════════════════════════════════════
+    function formatSize(bytes) {
+        if (bytes === undefined || bytes === null) return '0 B';
+        if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+        if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+        if (bytes >= 1024) return (bytes / 1024).toFixed(0) + ' KB';
+        return bytes + ' B';
+    }
+
+    function renderStorageDashboard(storage) {
+        // Remove existing dashboard if any
+        const existing = document.getElementById('storageDashboard');
+        if (existing) existing.remove();
+
+        const deletableCount = storage.deletable_count || 0;
+        const deletableSize = storage.deletable_size || 0;
+        const rawJpgPairsCount = storage.raw_jpg_pairs_count || 0;
+        const pairJpgSize = storage.pair_jpg_size || 0;
+        const totalCount = deletableCount + (storage.raw_jpg_orphan_count || 0);
+        const totalSize = deletableSize + pairJpgSize;
+
+        const dashboard = document.createElement('div');
+        dashboard.id = 'storageDashboard';
+        dashboard.className = 'storage-dashboard';
+        dashboard.innerHTML = `
+            <div class="sd-title">📊 存储仪表盘 — 可释放空间: <span>${formatSize(totalSize)}</span></div>
+            <div class="sd-rows">
+                <div class="sd-row">
+                    <span class="sd-icon">📸</span>
+                    <span class="sd-label">相似照片可清理</span>
+                    <span class="sd-value danger">${deletableCount} 张 (${formatSize(deletableSize)})</span>
+                </div>
+                <div class="sd-row">
+                    <span class="sd-icon">📷</span>
+                    <span class="sd-label">RAW+JPG JPG可清理</span>
+                    <span class="sd-value warning">${rawJpgPairsCount} 组 (${formatSize(pairJpgSize)})</span>
+                </div>
+                <div class="sd-row sd-total">
+                    <span class="sd-icon">🗑️</span>
+                    <span class="sd-label">总计可移至废纸篓</span>
+                    <span class="sd-value">${totalCount} 张</span>
+                </div>
+            </div>
+            <div class="sd-actions">
+                <button class="btn btn-danger" onclick="storageCleanAll()">
+                    🗑️ 一键清理所有
+                </button>
+                <button class="btn btn-primary" onclick="enterCullMode()">
+                    ⚡ 快速筛选模式
+                </button>
+            </div>
+        `;
+
+        const groupsArea = document.getElementById('groupsArea');
+        groupsArea.parentNode.insertBefore(dashboard, groupsArea);
+    }
+
+    // Collect all deletable paths from scan results
+    function collectAllDeletablePaths() {
+        const paths = [];
+        if (!scanResults) return paths;
+
+        // From similar groups: all non-keep files
+        (scanResults.groups || []).forEach(group => {
+            const files = group.files || group;
+            const keepIndex = group.keep_index !== undefined ? group.keep_index : 0;
+            files.forEach((path, pi) => {
+                if (pi !== keepIndex) paths.push(path);
+            });
+        });
+
+        // From RAW+JPG pairs: the JPG files
+        (scanResults.raw_jpg_pairs || []).forEach(pair => {
+            if (pair.jpg) paths.push(pair.jpg);
+        });
+
+        return paths;
+    }
+
+    async function storageCleanAll() {
+        const paths = collectAllDeletablePaths();
+        if (paths.length === 0) {
+            showToast('没有可清理的文件', 'info');
+            return;
+        }
+
+        if (!confirm(`确定要将 ${paths.length} 个文件移到废纸篓吗？`)) return;
+
+        try {
+            const resp = await fetch('/api/move_to_trash', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paths })
+            });
+            const data = await resp.json();
+            if (data.moved_to_trash && data.moved_to_trash.length > 0) {
+                showToast(`已清理 ${data.moved_to_trash.length} 个文件`, 'success');
+                startScan();
+            }
+            if (data.errors && data.errors.length > 0) {
+                showToast(`${data.errors.length} 个文件清理失败`, 'error');
+            }
+        } catch (e) {
+            showToast('清理请求失败', 'error');
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  FEATURE 2: Cull Mode (快速筛选)
+    // ═══════════════════════════════════════════════════════
+    let cullState = {
+        active: false,
+        groups: [],
+        currentIndex: 0,
+        decisions: {}, // index -> keep_path
+        totalScanned: 0,
+        totalDeleted: 0
+    };
+
+    async function enterCullMode() {
+        if (!scanResults || (!scanResults.groups || scanResults.groups.length === 0)) {
+            showToast('请先完成扫描', 'info');
+            return;
+        }
+
+        try {
+            const resp = await fetch('/api/cull/start', { method: 'POST' });
+            const data = await resp.json();
+            if (data.error) {
+                showToast('启动筛选失败: ' + data.error, 'error');
+                return;
+            }
+
+            cullState.active = true;
+            cullState.groups = data.groups || [];
+            cullState.currentIndex = 0;
+            cullState.decisions = {};
+            cullState.totalScanned = 0;
+            cullState.totalDeleted = 0;
+
+            // Hide normal view, show cull view
+            document.getElementById('cullSummaryView').style.display = 'none';
+            document.getElementById('cullModeView').classList.add('active');
+            renderCullGroup();
+        } catch (e) {
+            showToast('启动筛选失败: ' + e.message, 'error');
+        }
+    }
+
+    function renderCullGroup() {
+        const groups = cullState.groups;
+        const idx = cullState.currentIndex;
+
+        if (idx >= groups.length) {
+            showCullSummary();
+            return;
+        }
+
+        const group = groups[idx];
+        const files = group.files || [];
+        const keepPath = group.keep_path || (files.length > 0 ? files[0].path : '');
+
+        document.getElementById('cullProgress').textContent = `组 ${idx + 1} / ${groups.length}`;
+
+        // Keeper area
+        const keeperImg = document.getElementById('cullKeeperImg');
+        const keeperName = document.getElementById('cullKeeperName');
+        const keeperFile = files.find(f => f.path === keepPath) || files[0];
+        if (keeperFile) {
+            keeperImg.src = '/api/thumbnail?path=' + encodeURIComponent(keeperFile.path) + '&size=800';
+            keeperName.textContent = keeperFile.name + ' (' + formatSize(keeperFile.size) + ')';
+        }
+
+        // Strip area
+        const strip = document.getElementById('cullStripArea');
+        strip.innerHTML = '';
+        files.forEach((f, fi) => {
+            const isKeeper = f.path === keepPath;
+            const item = document.createElement('div');
+            item.className = 'cull-strip-item' + (isKeeper ? ' selected' : '');
+            item.dataset.index = fi;
+            item.innerHTML = `
+                <img src="/api/thumbnail?path=${encodeURIComponent(f.path)}&size=160" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2248%22 height=%2248%22><rect fill=%22%231a1c25%22 width=%2248%22 height=%2248%22/><text fill=%22%238b8fa3%22 font-size=%2210%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22>N/A</text></svg>'" alt="">
+                <span class="cull-strip-name">${f.name}</span>
+                <span class="cull-strip-size">${isKeeper ? '✓保留' : formatSize(f.size)}</span>
+            `;
+            item.onclick = () => cullSelectFile(fi);
+            strip.appendChild(item);
+        });
+    }
+
+    function cullSelectFile(fileIndex) {
+        const group = cullState.groups[cullState.currentIndex];
+        const files = group.files || [];
+        if (fileIndex < 0 || fileIndex >= files.length) return;
+
+        const selectedPath = files[fileIndex].path;
+        group.keep_path = selectedPath;
+        renderCullGroup();
+    }
+
+    async function cullKeepCurrent() {
+        const group = cullState.groups[cullState.currentIndex];
+        const files = group.files || [];
+        const keepPath = group.keep_path || (files.length > 0 ? files[0].path : '');
+
+        // Count deletable in this group
+        files.forEach(f => {
+            if (f.path !== keepPath) cullState.totalDeleted++;
+        });
+        cullState.totalScanned++;
+
+        try {
+            await fetch('/api/cull/next', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ decision: 'keep_current' })
+            });
+        } catch (e) { /* ignore */ }
+
+        cullState.currentIndex++;
+        renderCullGroup();
+    }
+
+    async function cullSkipGroup() {
+        cullState.currentIndex++;
+        renderCullGroup();
+    }
+
+    function showCullSummary() {
+        document.getElementById('cullModeView').classList.remove('active');
+        document.getElementById('cullSummaryView').style.display = 'block';
+        // Count from decisions if available
+        let deleted = cullState.totalDeleted;
+        document.getElementById('cullSummaryText').textContent =
+            `你已经完成了 ${cullState.totalScanned} 组筛选，共标记 ${deleted} 张删除`;
+    }
+
+    async function cullApply() {
+        try {
+            const resp = await fetch('/api/cull/apply', { method: 'POST' });
+            const data = await resp.json();
+            if (data.error) {
+                showToast('应用失败: ' + data.error, 'error');
+                return;
+            }
+            showToast(`已删除 ${data.moved_to_trash || 0} 个文件`, 'success');
+            exitCullMode();
+            startScan();
+        } catch (e) {
+            showToast('应用请求失败', 'error');
+        }
+    }
+
+    function exitCullMode() {
+        cullState.active = false;
+        document.getElementById('cullModeView').classList.remove('active');
+        document.getElementById('cullSummaryView').style.display = 'none';
+    }
+
+    // Cull mode keyboard controls
+    document.addEventListener('keydown', function(e) {
+        if (!cullState.active) return;
+        if (!document.getElementById('cullModeView').classList.contains('active')) return;
+
+        const group = cullState.groups[cullState.currentIndex];
+        if (!group) return;
+        const files = group.files || [];
+
+        if (e.key === 'ArrowRight' || e.key === 'k' || e.key === 'K') {
+            e.preventDefault();
+            cullKeepCurrent();
+        } else if (e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            cullSkipGroup();
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            exitCullMode();
+        } else if (e.key >= '1' && e.key <= '9') {
+            e.preventDefault();
+            const idx = parseInt(e.key) - 1;
+            if (idx < files.length) {
+                cullSelectFile(idx);
+            }
+        }
+    });
+
+    // ═══════════════════════════════════════════════════════
+    //  FEATURE 3: Orphan Files (孤立文件)
+    // ═══════════════════════════════════════════════════════
+    let orphanResults = null;
+
+    async function startOrphanScan() {
+        const dir = document.getElementById('orphanDir').value.trim() || '~';
+        const btn = document.getElementById('orphanScanBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> 扫描中...';
+
+        document.getElementById('orphanProgressArea').style.display = 'block';
+        document.getElementById('orphanResults').style.display = 'none';
+
+        try {
+            const resp = await fetch('/api/orphan/detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dir })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                showToast('扫描失败: ' + data.error, 'error');
+                return;
+            }
+
+            orphanResults = data;
+            renderOrphanResults(data);
+        } catch (e) {
+            showToast('扫描请求失败: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> 扫描孤立文件';
+            document.getElementById('orphanProgressArea').style.display = 'none';
+        }
+    }
+
+    function renderOrphanResults(data) {
+        const resultsDiv = document.getElementById('orphanResults');
+        resultsDiv.style.display = 'block';
+
+        // RAW
+        document.getElementById('orphanRawCount').textContent =
+            (data.orphan_raws_count || 0) + ' 个文件 (' + formatSize(data.orphan_raws_size || 0) + ')';
+        const rawFiles = (data.orphan_raws || []).slice(0, 30);
+        document.getElementById('orphanRawFiles').innerHTML = rawFiles.map(f =>
+            `<span>${f.split('/').pop()}</span>`
+        ).join('') + (data.orphan_raws_count > 30 ? `<span style="color:var(--accent-light);">...还有 ${data.orphan_raws_count - 30} 个</span>` : '');
+
+        // Sidecars
+        document.getElementById('orphanSidecarCount').textContent =
+            (data.orphan_sidecars_count || 0) + ' 个文件 (' + formatSize(data.orphan_sidecars_size || 0) + ')';
+        const sidecarFiles = (data.orphan_sidecars || []).slice(0, 30);
+        document.getElementById('orphanSidecarFiles').innerHTML = sidecarFiles.map(f =>
+            `<span>${f.split('/').pop()}</span>`
+        ).join('') + (data.orphan_sidecars_count > 30 ? `<span style="color:var(--accent-light);">...还有 ${data.orphan_sidecars_count - 30} 个</span>` : '');
+
+        // JPEG
+        document.getElementById('orphanJpegCount').textContent =
+            (data.orphan_jpegs_count || 0) + ' 个文件 (' + formatSize(data.orphan_jpegs_size || 0) + ')';
+        const jpegFiles = (data.orphan_jpegs || []).slice(0, 30);
+        document.getElementById('orphanJpegFiles').innerHTML = jpegFiles.map(f =>
+            `<span>${f.split('/').pop()}</span>`
+        ).join('') + (data.orphan_jpegs_count > 30 ? `<span style="color:var(--accent-light);">...还有 ${data.orphan_jpegs_count - 30} 个</span>` : '');
+
+        // Total
+        const totalCount = data.total_orphan_count || 0;
+        const totalSize = data.total_orphan_size || 0;
+        document.getElementById('orphanTotal').textContent =
+            `预计可释放: ${totalCount} 个文件 (${formatSize(totalSize)})`;
+
+        // Enable cleanup button
+        document.getElementById('orphanCleanupBtn').disabled = totalCount === 0;
+    }
+
+    async function confirmOrphanCleanup() {
+        if (!orphanResults || !orphanResults.total_orphan_count) {
+            showToast('没有可清理的孤立文件', 'info');
+            return;
+        }
+
+        if (!confirm(`确定要清理 ${orphanResults.total_orphan_count} 个孤立文件吗？它们将被移到废纸篓。`)) return;
+
+        const dir = document.getElementById('orphanDir').value.trim() || '~';
+        const btn = document.getElementById('orphanCleanupBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> 清理中...';
+
+        try {
+            const resp = await fetch('/api/orphan/cleanup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dir })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                showToast('清理失败: ' + data.error, 'error');
+                return;
+            }
+
+            showToast(`已清理 ${orphanResults.total_orphan_count} 个孤立文件`, 'success');
+            orphanResults = null;
+            document.getElementById('orphanResults').style.display = 'none';
+        } catch (e) {
+            showToast('清理请求失败: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '🗑️ 清理所有孤立文件';
+        }
     }
 </script>
 
