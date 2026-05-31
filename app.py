@@ -35,7 +35,22 @@ app = Flask(__name__,
 SCAN_DIR = os.path.expanduser("~")
 THRESHOLD = 0.85  # similarity threshold (0-1)
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif', '.webp', '.heic', '.heif',
-                     '.arw', '.cr2', '.cr3', '.nef', '.nrw', '.dng', '.orf', '.raf', '.rw2', '.srw'}
+                     '.arw', '.srf', '.sr2', '.srw',
+                     '.crw', '.cr2', '.cr3',
+                     '.nef', '.nrw',
+                     '.raf',
+                     '.orf',
+                     '.rw2', '.raw', '.rwl',
+                     '.pef', '.ptx',
+                     '.smp',
+                     '.kdc', '.dcr', '.k25',
+                     '.mrw', '.mdc',
+                     '.dng',
+                     '.iiq', '.mos', '.mef',
+                     '.3fr', '.fff',
+                     '.x3f',
+                     '.gpr',
+                     '.cdng', '.mlv'}
 HASH_SIZE = 16  # perceptual hash size (larger = more detail)
 
 # ─── State ─────────────────────────────────────────────────────────────────────
@@ -49,7 +64,22 @@ scan_state = {
 
 # ─── RAW image support ───────────────────────────────────────────────────────
 
-RAW_EXTENSIONS = {'.arw', '.cr2', '.cr3', '.nef', '.nrw', '.dng', '.orf', '.raf', '.rw2', '.srw'}
+RAW_EXTENSIONS = {'.arw', '.srf', '.sr2', '.srw',
+                   '.crw', '.cr2', '.cr3',
+                   '.nef', '.nrw',
+                   '.raf',
+                   '.orf',
+                   '.rw2', '.raw', '.rwl',
+                   '.pef', '.ptx',
+                   '.smp',
+                   '.kdc', '.dcr', '.k25',
+                   '.mrw', '.mdc',
+                   '.dng',
+                   '.iiq', '.mos', '.mef',
+                   '.3fr', '.fff',
+                   '.x3f',
+                   '.gpr',
+                   '.cdng', '.mlv'}
 
 def open_image_safe(image_path):
     """Open an image file, supporting both regular images and RAW formats."""
