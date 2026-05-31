@@ -1,0 +1,1529 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Photo Cleaner</title>
+    <style>
+        /* ─── Reset & Variables ─── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0f1117;
+            --bg-card: #1a1c25;
+            --bg-card-hover: #22242f;
+            --bg-input: #12141c;
+            --border: #2a2d3a;
+            --text: #e1e4ed;
+            --text-muted: #8b8fa3;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --danger: #ff6b6b;
+            --success: #51cf66;
+            --warning: #fcc419;
+            --radius: 12px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.3);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        /* ─── Layout ─── */
+        .app-header {
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            background: var(--bg-card);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .logo svg { width: 28px; height: 28px; }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* ─── Tab Bar ─── */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-input);
+            border-radius: 20px;
+            padding: 4px;
+            border: 1px solid var(--border);
+        }
+        .tab-btn {
+            padding: 7px 18px;
+            border: none;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: transparent;
+            color: var(--text-muted);
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        /* ─── Buttons ─── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: var(--bg-input);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        .btn:hover { background: var(--bg-card-hover); border-color: var(--text-muted); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .btn-primary:hover { background: #5a4bd1; border-color: #5a4bd1; }
+
+        .btn-success {
+            background: var(--success);
+            color: #fff;
+            border-color: var(--success);
+        }
+        .btn-success:hover { background: #40c057; border-color: #40c057; }
+
+        .btn-danger {
+            background: var(--danger);
+            color: #fff;
+            border-color: var(--danger);
+        }
+        .btn-danger:hover { background: #e05555; border-color: #e05555; }
+
+        .btn-outline { background: transparent; }
+
+        /* ─── Inputs ─── */
+        input[type="text"] {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text);
+            font-size: 14px;
+            min-width: 260px;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        input[type="range"] {
+            width: 120px;
+            accent-color: var(--accent);
+        }
+
+        select {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--bg-input);
+            color: var(--text);
+            font-size: 14px;
+            cursor: pointer;
+            appearance: auto;
+        }
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* ─── Stats Bar ─── */
+        .stats-bar {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 20px;
+            flex: 1;
+            min-width: 120px;
+        }
+        .stat-card .label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-card .value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .stat-card .value.accent { color: var(--accent-light); }
+        .stat-card .value.danger { color: var(--danger); }
+        .stat-card .value.success { color: var(--success); }
+        .stat-card .value.warning { color: var(--warning); }
+
+        /* ─── Progress ─── */
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent-light));
+            border-radius: 2px;
+            transition: width 0.3s;
+        }
+        .progress-text {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* ─── Group Cards ─── */
+        .groups-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .group-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .group-card:hover { border-color: #3d3f52; }
+        .group-card.selected { border-color: var(--accent); }
+
+        .group-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(108, 92, 231, 0.06);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .group-header .group-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .group-header .group-count {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .group-header .group-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .group-photos {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+            padding: 12px;
+        }
+
+        /* ─── Photo Cards ─── */
+        .photo-card {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--bg-input);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            aspect-ratio: 1;
+        }
+        .photo-card:hover {
+            border-color: var(--text-muted);
+            transform: scale(1.02);
+        }
+        .photo-card.selected {
+            border-color: var(--danger);
+        }
+        .photo-card.selected::after {
+            content: '✕';
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 22px;
+            height: 22px;
+            background: var(--danger);
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .photo-card .keep-badge {
+            position: absolute;
+            top: 6px;
+            left: 6px;
+            padding: 2px 8px;
+            background: var(--success);
+            color: #fff;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .photo-card .keep-badge.show { opacity: 1; }
+        .photo-card .photo-size {
+            position: absolute;
+            bottom: 6px;
+            left: 6px;
+            padding: 2px 6px;
+            background: rgba(0,0,0,0.7);
+            color: #fff;
+            font-size: 10px;
+            border-radius: 4px;
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-card .photo-name {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 6px 8px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            color: #fff;
+            font-size: 11px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ─── Organize Group Cards ─── */
+        .organize-group-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: rgba(108, 92, 231, 0.06);
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .organize-group-header .group-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .organize-group-header .group-count {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .organize-group-body {
+            padding: 12px 16px;
+        }
+
+        .organize-thumb-strip {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+        }
+        .organize-thumb-strip img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 6px;
+            flex-shrink: 0;
+            background: var(--bg-input);
+        }
+
+        .organize-file-list {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.7;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .organize-file-list .file-item {
+            padding: 2px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .organize-file-list .file-item::before {
+            content: '• ';
+            color: var(--accent);
+        }
+
+        /* ─── Modal ─── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+        }
+        .modal-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .modal-header h3 {
+            font-size: 16px;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .modal-close:hover { color: var(--text); }
+
+        .modal-body {
+            padding: 20px;
+            overflow: auto;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .modal-body img {
+            max-width: 100%;
+            max-height: 70vh;
+            border-radius: 8px;
+        }
+        .modal-body .modal-info {
+            min-width: 200px;
+        }
+        .modal-body .modal-info p {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+        .modal-body .modal-info strong {
+            color: var(--text);
+        }
+
+        /* ─── Confirm Modal ─── */
+        .confirm-body {
+            padding: 24px;
+            max-width: 560px;
+        }
+        .confirm-body .confirm-summary {
+            margin-bottom: 20px;
+        }
+        .confirm-body .confirm-summary p {
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .confirm-body .confirm-summary .summary-label {
+            color: var(--text-muted);
+        }
+        .confirm-body .confirm-summary .summary-value {
+            color: var(--text);
+            font-weight: 600;
+        }
+        .confirm-body .confirm-warning {
+            padding: 12px 16px;
+            background: rgba(252, 196, 25, 0.1);
+            border: 1px solid var(--warning);
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--warning);
+            margin-bottom: 20px;
+        }
+        .confirm-body .confirm-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        /* ─── Empty State ─── */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+        }
+        .empty-state svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.4; }
+        .empty-state h3 { font-size: 20px; margin-bottom: 8px; color: var(--text); }
+        .empty-state p { font-size: 14px; max-width: 400px; margin: 0 auto 20px; }
+
+        /* ─── Tab Content ─── */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* ─── Responsive ─── */
+        @media (max-width: 768px) {
+            .container { padding: 12px; }
+            .app-header { padding: 12px 16px; }
+            .group-photos { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+            input[type="text"] { min-width: 180px; }
+            .modal { max-width: 98vw; }
+            .modal-body { flex-direction: column; }
+        }
+
+        /* ─── Toast ─── */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: 8px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 14px;
+            box-shadow: var(--shadow);
+            animation: slideIn 0.3s ease;
+            max-width: 400px;
+        }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+        .toast.info { border-color: var(--accent); }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ─── Spinner ─── */
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+        /* ─── Dir Picker ─── */
+        .dir-picker {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            flex: 1;
+            min-width: 180px;
+            max-width: 320px;
+        }
+        .dir-picker input[type="text"] {
+            flex: 1;
+            min-width: 0;
+            cursor: pointer;
+            background: var(--bg-input);
+            color: var(--text-muted);
+            font-size: 13px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .dir-picker input[type="text"]:hover {
+            border-color: var(--text-muted);
+        }
+
+        /* ─── Dir Tree Popup ─── */
+        .dir-tree-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(2px);
+            z-index: 900;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+        }
+        .dir-tree-overlay.active { display: flex; }
+
+        .dir-tree-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            width: 480px;
+            max-width: 90vw;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+        }
+        .dir-tree-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .dir-tree-header h3 {
+            font-size: 15px;
+        }
+        .dir-tree-current {
+            padding: 8px 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .dir-tree-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        .dir-tree-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-size: 14px;
+        }
+        .dir-tree-item:hover { background: var(--bg-card-hover); }
+        .dir-tree-item .dir-icon {
+            opacity: 0.5;
+            flex-shrink: 0;
+        }
+        .dir-tree-item .dir-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .dir-tree-item .dir-select-btn {
+            font-size: 11px;
+            padding: 2px 10px;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .dir-tree-item:hover .dir-select-btn { opacity: 1; }
+        .dir-tree-up {
+            color: var(--accent-light);
+            font-weight: 600;
+        }
+        .dir-tree-empty {
+            padding: 40px 20px;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="app-header">
+    <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+            <circle cx="12" cy="13" r="3"/>
+        </svg>
+        Photo Cleaner
+    </div>
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('cleanup')" id="tabBtnCleanup">相似清理</button>
+        <button class="tab-btn" onclick="switchTab('organize')" id="tabBtnOrganize">归类整理</button>
+    </div>
+    <div class="header-controls" id="headerControlsCleanup">
+        <div class="dir-picker">
+            <input type="text" id="scanDir" placeholder="扫描目录（默认 ~）" value="~" readonly>
+            <button class="btn btn-outline" onclick="browseDir('scanDir')" title="选择目录">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                浏览
+            </button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:13px;color:var(--text-muted);">阈值:</span>
+            <input type="range" id="thresholdSlider" min="0.5" max="0.99" step="0.01" value="0.85">
+            <span id="thresholdValue" style="font-size:13px;color:var(--text-muted);min-width:36px;">0.85</span>
+        </div>
+        <select id="strategySelect" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-input);color:var(--text);font-size:13px;cursor:pointer;">
+            <option value="largest">保留最大文件</option>
+            <option value="sharpest">保留最清晰的</option>
+            <option value="richest">保留EXIF最完整的</option>
+        </select>
+        <button class="btn btn-primary" id="scanBtn" onclick="startScan()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            扫描
+        </button>
+    </div>
+    <div class="header-controls" id="headerControlsOrganize" style="display:none;">
+        <div class="dir-picker">
+            <input type="text" id="organizeDir" placeholder="扫描目录（默认 ~）" value="~" readonly>
+            <button class="btn btn-outline" onclick="browseDir('organizeDir')" title="选择目录">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                浏览
+            </button>
+        </div>
+        <select id="organizeMode">
+            <option value="date">按拍摄日期</option>
+            <option value="location">按GPS地点</option>
+        </select>
+        <select id="organizeAction">
+            <option value="copy">复制</option>
+            <option value="move">移动</option>
+        </select>
+        <div class="dir-picker" style="flex:1;max-width:240px;">
+            <input type="text" id="organizeOutputDir" placeholder="输出目录（可选）" readonly>
+            <button class="btn btn-outline" onclick="browseDir('organizeOutputDir')" style="font-size:11px;padding:4px 10px;">选择</button>
+        </div>
+        <button class="btn btn-primary" id="previewBtn" onclick="previewOrganize()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            预览归类
+        </button>
+        <button class="btn btn-success" id="executeBtn" onclick="confirmOrganize()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            执行归类
+        </button>
+    </div>
+</div>
+
+<!-- Dir Tree Modal -->
+<div class="dir-tree-overlay" id="dirTreeModal">
+    <div class="dir-tree-panel" onclick="event.stopPropagation()">
+        <div class="dir-tree-header">
+            <h3>选择目录</h3>
+            <button class="modal-close" onclick="closeDirTree()">&times;</button>
+        </div>
+        <div class="dir-tree-current" id="dirTreeCurrent">~</div>
+        <div class="dir-tree-list" id="dirTreeList">
+            <div class="dir-tree-empty">加载中...</div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <!-- ─── Tab 1: 相似清理 ─── -->
+    <div class="tab-content active" id="tabCleanup">
+        <!-- Stats -->
+        <div class="stats-bar" id="statsBar" style="display:none;">
+            <div class="stat-card">
+                <div class="label">总计照片</div>
+                <div class="value" id="statTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">已哈希</div>
+                <div class="value accent" id="statHashed">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">相似分组</div>
+                <div class="value danger" id="statGroups">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">可清理</div>
+                <div class="value success" id="statCleanable">0</div>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div id="progressArea" style="display:none;">
+            <div class="progress-bar">
+                <div class="fill" id="progressFill" style="width:0%"></div>
+            </div>
+            <div class="progress-text" id="progressText">正在准备...</div>
+        </div>
+
+        <!-- Groups -->
+        <div id="groupsArea"></div>
+
+        <!-- Action bar -->
+        <div id="actionBar" style="display:none; position:sticky; bottom:16px; margin-top:16px;">
+            <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; box-shadow:var(--shadow);">
+                <span id="selectedCount" style="font-size:14px;color:var(--text-muted);">已选择 0 张</span>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-outline" onclick="clearSelection()">取消选择</button>
+                    <button class="btn btn-danger" id="deleteBtn" onclick="deleteSelected()">
+                        🗑️ 移到废纸篓
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Tab 2: 归类整理 ─── -->
+    <div class="tab-content" id="tabOrganize">
+        <!-- Stats -->
+        <div class="stats-bar" id="organizeStatsBar" style="display:none;">
+            <div class="stat-card">
+                <div class="label">总计照片</div>
+                <div class="value" id="orgStatTotal">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">归类分组</div>
+                <div class="value accent" id="orgStatGroups">0</div>
+            </div>
+            <div class="stat-card" id="orgStatGpsCard" style="display:none;">
+                <div class="label">有GPS定位</div>
+                <div class="value success" id="orgStatWithGps">0</div>
+            </div>
+            <div class="stat-card" id="orgStatNoGpsCard" style="display:none;">
+                <div class="label">无GPS定位</div>
+                <div class="value warning" id="orgStatNoGps">0</div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div id="organizeResults"></div>
+    </div>
+
+</div>
+
+<!-- Modal (Group View) -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3 id="modalTitle">照片详情</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <img id="modalImage" src="" alt="">
+            <div class="modal-info" id="modalInfo"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Organize Modal -->
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeConfirmModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>确认执行归类</h3>
+            <button class="modal-close" onclick="closeConfirmModal()">&times;</button>
+        </div>
+        <div class="confirm-body">
+            <div class="confirm-summary" id="confirmSummary">
+                <p><span class="summary-label">模式：</span><span class="summary-value" id="confirmMode">--</span></p>
+                <p><span class="summary-label">操作：</span><span class="summary-value" id="confirmAction">--</span></p>
+                <p><span class="summary-label">输出目录：</span><span class="summary-value" id="confirmOutputDir">--</span></p>
+                <p><span class="summary-label">归类分组：</span><span class="summary-value" id="confirmGroups">--</span></p>
+                <p><span class="summary-label">文件总数：</span><span class="summary-value" id="confirmFiles">--</span></p>
+            </div>
+            <div class="confirm-warning" id="confirmWarning">
+                ⚠️ 复制操作不会修改原始文件，移动操作会将文件转移到目标目录。
+            </div>
+            <div class="confirm-actions">
+                <button class="btn btn-outline" onclick="closeConfirmModal()">取消</button>
+                <button class="btn btn-success" id="confirmExecBtn" onclick="executeOrganize()">确认执行</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Toasts -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+    // ─── State ───
+    let currentTab = 'cleanup';
+    let scanResults = null;
+    let selectedToDelete = new Set();
+    let polling = false;
+    let organizePreviewData = null;
+    let currentDirInput = null;
+
+    // ─── Tab Switching ───
+    function switchTab(tab) {
+        currentTab = tab;
+
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('tabBtn' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+
+        document.getElementById('headerControlsCleanup').style.display = tab === 'cleanup' ? '' : 'none';
+        document.getElementById('headerControlsOrganize').style.display = tab === 'organize' ? '' : 'none';
+    }
+
+    // ─── Threshold ───
+    document.getElementById('thresholdSlider').addEventListener('input', function() {
+        document.getElementById('thresholdValue').textContent = this.value;
+    });
+
+    // ─── Scan ───
+    async function startScan() {
+        const dir = document.getElementById('scanDir').value.trim() || '~';
+        const threshold = parseFloat(document.getElementById('thresholdSlider').value);
+        const strategy = document.getElementById('strategySelect').value;
+        const btn = document.getElementById('scanBtn');
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> 扫描中...';
+
+        document.getElementById('progressArea').style.display = 'block';
+        document.getElementById('statsBar').style.display = 'none';
+        document.getElementById('groupsArea').innerHTML = '';
+        document.getElementById('actionBar').style.display = 'none';
+        selectedToDelete.clear();
+        updateSelectionCount();
+
+        try {
+            const resp = await fetch('/api/scan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dir, threshold, strategy })
+            });
+            if (!resp.ok) {
+                const err = await resp.json();
+                showToast(err.error || '启动扫描失败', 'error');
+                resetScanBtn();
+                return;
+            }
+            pollStatus();
+        } catch (e) {
+            showToast('无法连接到服务器', 'error');
+            resetScanBtn();
+        }
+    }
+
+    function resetScanBtn() {
+        const btn = document.getElementById('scanBtn');
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> 扫描';
+        document.getElementById('progressArea').style.display = 'none';
+    }
+
+    async function pollStatus() {
+        if (polling) return;
+        polling = true;
+
+        const poll = async () => {
+            try {
+                const resp = await fetch('/api/scan/status');
+                const data = await resp.json();
+
+                if (data.running) {
+                    const p = data.progress;
+                    const pct = p.total > 0 ? Math.round((p.current / p.total) * 100) : 0;
+                    document.getElementById('progressFill').style.width = pct + '%';
+                    const phase = p.phase === 'hashing' ? '正在计算哈希...' : p.phase === 'clustering' ? '正在聚类...' : '正在扫描...';
+                    document.getElementById('progressText').textContent = `${phase} ${p.current}/${p.total} (${pct}%)`;
+                    setTimeout(poll, 500);
+                } else {
+                    polling = false;
+                    document.getElementById('progressArea').style.display = 'none';
+                    resetScanBtn();
+
+                    if (data.error) {
+                        showToast('扫描出错: ' + data.error, 'error');
+                        return;
+                    }
+
+                    if (data.results) {
+                        scanResults = data.results;
+                        renderResults(scanResults);
+                    } else {
+                        showToast('扫描无结果', 'info');
+                    }
+                }
+            } catch (e) {
+                polling = false;
+                resetScanBtn();
+                showToast('轮询状态失败', 'error');
+            }
+        };
+
+        poll();
+    }
+
+    // ─── Render Results ───
+    function renderResults(results) {
+        document.getElementById('statTotal').textContent = results.total;
+        document.getElementById('statHashed').textContent = results.hashed;
+        document.getElementById('statGroups').textContent = results.similar_groups;
+        document.getElementById('statCleanable').textContent = results.similar_count - results.similar_groups;
+        document.getElementById('statsBar').style.display = 'flex';
+
+        const area = document.getElementById('groupsArea');
+        area.innerHTML = '';
+
+        if (results.groups.length === 0) {
+            area.innerHTML = `
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                    <h3>没有发现相似照片 🎉</h3>
+                    <p>当前目录下的所有照片都是独一无二的，没有找到相似的照片。</p>
+                </div>
+            `;
+            return;
+        }
+
+        const strategyLabels = {largest: '最大文件', sharpest: '最清晰', richest: 'EXIF最完整'};
+        const curStrategy = strategyLabels[results.strategy] || '最大文件';
+
+        results.groups.forEach((group, idx) => {
+            const card = document.createElement('div');
+            card.className = 'group-card';
+            card.id = `group-${idx}`;
+
+            const files = group.files || group;
+            const keepIndex = group.keep_index !== undefined ? group.keep_index : 0;
+            const keepPath = files[keepIndex];
+
+            let photosHtml = '';
+            files.forEach((path, pi) => {
+                const filename = path.split('/').pop();
+                const isKeep = path === keepPath;
+                const selected = selectedToDelete.has(path);
+                let sizeStr = '';
+                try {
+                    const size = fsSize(path);
+                    sizeStr = size > 1024 * 1024
+                        ? (size / (1024 * 1024)).toFixed(1) + ' MB'
+                        : (size / 1024).toFixed(0) + ' KB';
+                } catch(e) { sizeStr = '?'; }
+
+                photosHtml += `
+                    <div class="photo-card ${selected ? 'selected' : ''}" onclick="toggleSelect('${escapePath(path)}', this)" title="${filename}">
+                        <img src="/api/thumbnail?path=${encodeURIComponent(path)}&size=300" loading="lazy" alt="${filename}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22300%22><rect fill=%22%231a1c25%22 width=%22300%22 height=%22300%22/><text fill=%22%238b8fa3%22 font-size=%2214%22 x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22>加载失败</text></svg>'">
+                        <div class="keep-badge ${isKeep ? 'show' : ''}">保留</div>
+                        <div class="photo-size">${sizeStr}</div>
+                        <div class="photo-name">${filename}</div>
+                    </div>
+                `;
+            });
+
+            const stratLabel = group.strategy || curStrategy;
+            card.innerHTML = `
+                <div class="group-header">
+                    <div class="group-info">
+                        <strong>分组 ${idx + 1}</strong>
+                        <span class="group-count">${files.length} 张相似 · <span style="color:var(--accent-light)">${stratLabel}</span></span>
+                    </div>
+                    <div class="group-actions">
+                        <button class="btn btn-outline" onclick="selectAllInGroup(${idx})">全选(删)</button>
+                        <button class="btn btn-outline" onclick="viewGroup(${idx})">对比查看</button>
+                    </div>
+                </div>
+                <div class="group-photos">${photosHtml}</div>
+            `;
+
+            area.appendChild(card);
+        });
+
+        document.getElementById('actionBar').style.display = 'block';
+    }
+
+    // ─── Helper: get file size ───
+    function fsSize(path) {
+        return 0;
+    }
+
+    // ─── Selection ───
+    function escapePath(path) {
+        return path.replace(/'/g, "\\'");
+    }
+
+    function toggleSelect(path, el) {
+        if (selectedToDelete.has(path)) {
+            selectedToDelete.delete(path);
+            el.classList.remove('selected');
+        } else {
+            selectedToDelete.add(path);
+            el.classList.add('selected');
+        }
+        updateSelectionCount();
+    }
+
+    function selectAllInGroup(idx) {
+        const group = scanResults.groups[idx];
+        const files = group.files || group;
+        const keepIndex = group.keep_index !== undefined ? group.keep_index : 0;
+        files.forEach((path, pi) => {
+            if (pi !== keepIndex) {
+                selectedToDelete.add(path);
+            }
+        });
+        renderResults(scanResults);
+        updateSelectionCount();
+    }
+
+    function clearSelection() {
+        selectedToDelete.clear();
+        document.querySelectorAll('.photo-card.selected').forEach(el => el.classList.remove('selected'));
+        updateSelectionCount();
+    }
+
+    function updateSelectionCount() {
+        document.getElementById('selectedCount').textContent = `已选择 ${selectedToDelete.size} 张删除`;
+        const btn = document.getElementById('deleteBtn');
+        btn.disabled = selectedToDelete.size === 0;
+    }
+
+    // ─── Delete ───
+    async function deleteSelected() {
+        if (selectedToDelete.size === 0) return;
+
+        if (!confirm(`确定要将 ${selectedToDelete.size} 张照片移到废纸篓吗？`)) return;
+
+        const paths = Array.from(selectedToDelete);
+
+        try {
+            const resp = await fetch('/api/move_to_trash', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paths })
+            });
+            const data = await resp.json();
+
+            if (data.moved_to_trash.length > 0) {
+                showToast(`已将 ${data.moved_to_trash.length} 张照片移到废纸篓`, 'success');
+                selectedToDelete.clear();
+                updateSelectionCount();
+                startScan();
+            }
+            if (data.errors.length > 0) {
+                showToast(`${data.errors.length} 张照片删除失败`, 'error');
+            }
+        } catch (e) {
+            showToast('删除请求失败', 'error');
+        }
+    }
+
+    // ─── Modal ───
+    function viewGroup(idx) {
+        const group = scanResults.groups[idx];
+        const files = group.files || group;
+        const modal = document.getElementById('modal');
+        const body = document.getElementById('modalBody');
+
+        document.getElementById('modalTitle').textContent = `分组 ${idx + 1} - ${files.length} 张相似照片`;
+
+        body.innerHTML = '';
+        files.forEach(path => {
+            const filename = path.split('/').pop();
+            const container = document.createElement('div');
+            container.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:8px;min-width:200px;';
+            container.innerHTML = `
+                <img src="/api/thumbnail?path=${encodeURIComponent(path)}&size=600" style="max-height:400px;">
+                <span style="font-size:12px;color:var(--text-muted);">${filename}</span>
+            `;
+            body.appendChild(container);
+        });
+
+        modal.classList.add('active');
+    }
+
+    function closeModal(e) {
+        if (e && e.target !== document.getElementById('modal')) return;
+        document.getElementById('modal').classList.remove('active');
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeConfirmModal();
+        }
+    });
+
+    // ─── Toast ───
+    function showToast(msg, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = msg;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.3s';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // ─── Enter key to scan ───
+    document.getElementById('scanDir').addEventListener('keydown', e => {
+        if (e.key === 'Enter') startScan();
+    });
+
+    // ─── Sync directory inputs ───
+    document.getElementById('scanDir').addEventListener('input', function() {
+        document.getElementById('organizeDir').value = this.value;
+    });
+    document.getElementById('organizeDir').addEventListener('input', function() {
+        document.getElementById('scanDir').value = this.value;
+    });
+
+    // ─── Organize: Preview ───
+    async function previewOrganize() {
+        const dir = document.getElementById('organizeDir').value.trim() || '~';
+        const mode = document.getElementById('organizeMode').value;
+
+        const btn = document.getElementById('previewBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> 预览中...';
+
+        document.getElementById('organizeStatsBar').style.display = 'none';
+        document.getElementById('organizeResults').innerHTML = '';
+
+        try {
+            const resp = await fetch('/api/organize/preview', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dir, mode })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                showToast('预览出错: ' + data.error, 'error');
+                return;
+            }
+
+            organizePreviewData = data;
+            renderOrganizePreview(data, mode);
+
+            const execBtn = document.getElementById('executeBtn');
+            execBtn.disabled = false;
+        } catch (e) {
+            showToast('预览请求失败: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 预览归类';
+        }
+    }
+
+    function renderOrganizePreview(data, mode) {
+        const groups = data.groups || [];
+        const total = data.total || 0;
+
+        document.getElementById('orgStatTotal').textContent = total;
+        document.getElementById('orgStatGroups').textContent = groups.length;
+
+        const gpsCard = document.getElementById('orgStatGpsCard');
+        const noGpsCard = document.getElementById('orgStatNoGpsCard');
+
+        if (mode === 'location') {
+            gpsCard.style.display = '';
+            noGpsCard.style.display = '';
+            let withGps = 0;
+            let noGps = 0;
+            groups.forEach(g => {
+                if (g.name === '无定位信息') {
+                    noGps += g.files.length;
+                } else {
+                    withGps += g.files.length;
+                }
+            });
+            document.getElementById('orgStatWithGps').textContent = withGps;
+            document.getElementById('orgStatNoGps').textContent = noGps;
+        } else {
+            gpsCard.style.display = 'none';
+            noGpsCard.style.display = 'none';
+        }
+
+        document.getElementById('organizeStatsBar').style.display = 'flex';
+
+        const area = document.getElementById('organizeResults');
+        area.innerHTML = '';
+
+        if (groups.length === 0) {
+            area.innerHTML = `
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                    <h3>没有找到可归类的照片</h3>
+                    <p>当前目录下没有照片文件。</p>
+                </div>
+            `;
+            return;
+        }
+
+        groups.forEach((group, idx) => {
+            const card = document.createElement('div');
+            card.className = 'group-card';
+
+            const files = group.files || [];
+            const fileCount = files.length;
+            const thumbFiles = files.slice(0, 5);
+
+            let thumbHtml = '';
+            thumbFiles.forEach(f => {
+                thumbHtml += `<img src="/api/thumbnail?path=${encodeURIComponent(f)}&size=160" loading="lazy" onerror="this.style.display='none'" alt="">`;
+            });
+
+            let fileListHtml = '';
+            files.forEach(f => {
+                const safeName = f.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                fileListHtml += `<div class="file-item" title="${safeName}">${safeName}</div>`;
+            });
+
+            card.innerHTML = `
+                <div class="organize-group-header">
+                    <div class="group-info">
+                        <strong>${group.name}</strong>
+                        <span class="group-count">${fileCount} 张照片</span>
+                    </div>
+                </div>
+                <div class="organize-group-body">
+                    <div class="organize-thumb-strip">${thumbHtml || '<span style="color:var(--text-muted);font-size:12px;">无缩略图</span>'}</div>
+                    <div class="organize-file-list">${fileListHtml}</div>
+                </div>
+            `;
+
+            area.appendChild(card);
+        });
+    }
+
+    // ─── Organize: Confirm ───
+    function confirmOrganize() {
+        if (!organizePreviewData || !organizePreviewData.groups) {
+            showToast('请先点击"预览归类"查看结果', 'info');
+            return;
+        }
+
+        const mode = document.getElementById('organizeMode').value;
+        const action = document.getElementById('organizeAction').value;
+        const outputDir = document.getElementById('organizeOutputDir').value.trim() || '(默认: 扫描目录/_归类整理)';
+        const groups = organizePreviewData.groups;
+        let totalFiles = 0;
+        groups.forEach(g => { totalFiles += (g.files || []).length; });
+
+        document.getElementById('confirmMode').textContent = mode === 'date' ? '按拍摄日期' : '按GPS地点';
+        document.getElementById('confirmAction').textContent = action === 'copy' ? '复制' : '移动';
+        document.getElementById('confirmOutputDir').textContent = outputDir;
+        document.getElementById('confirmGroups').textContent = groups.length;
+        document.getElementById('confirmFiles').textContent = totalFiles;
+
+        const warning = document.getElementById('confirmWarning');
+        if (action === 'move') {
+            warning.textContent = '⚠️ 移动操作会将原始照片转移到目标目录，原位置的照片将被移除。建议先使用"复制"模式确认结果。';
+            warning.style.display = '';
+        } else {
+            warning.textContent = '⚠️ 复制操作会在目标目录创建副本，不会修改原始文件。';
+            warning.style.display = '';
+        }
+
+        document.getElementById('confirmModal').classList.add('active');
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('confirmModal').classList.remove('active');
+    }
+
+    // ─── Organize: Execute ───
+    async function executeOrganize() {
+        const dir = document.getElementById('organizeDir').value.trim() || '~';
+        const mode = document.getElementById('organizeMode').value;
+        const action = document.getElementById('organizeAction').value;
+        const outputDir = document.getElementById('organizeOutputDir').value.trim();
+
+        const btn = document.getElementById('confirmExecBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> 执行中...';
+
+        try {
+            const resp = await fetch('/api/organize/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dir, mode, action, output_dir: outputDir })
+            });
+            const data = await resp.json();
+
+            closeConfirmModal();
+
+            if (data.error) {
+                showToast('执行出错: ' + data.error, 'error');
+                return;
+            }
+
+            const total = data.total_organized || 0;
+            const errCount = (data.errors || []).length;
+            showToast(`归类完成：已${action === 'move' ? '移动' : '复制'} ${total} 张照片` + (errCount > 0 ? `，${errCount} 个错误` : ''), 'success');
+
+            // Refresh preview
+            previewOrganize();
+
+            document.getElementById('executeBtn').disabled = true;
+        } catch (e) {
+            showToast('执行请求失败: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '确认执行';
+        }
+    }
+
+    // ─── Organize: Enter key to preview ───
+    document.getElementById('organizeDir').addEventListener('keydown', e => {
+        if (e.key === 'Enter') previewOrganize();
+    });
+
+    // ─── Tab-specific keyboard shortcuts ───
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && currentTab === 'organize') {
+            const active = document.activeElement;
+            if (active && active.id === 'organizeDir') {
+                previewOrganize();
+            }
+        }
+    });
+
+    // ─── Directory Browser ───
+    function browseDir(inputId) {
+        currentDirInput = inputId;
+        const input = document.getElementById(inputId);
+        const currentPath = input.value.trim() || '~';
+        document.getElementById('dirTreeModal').classList.add('active');
+        loadDirTree(currentPath);
+    }
+
+    function closeDirTree() {
+        document.getElementById('dirTreeModal').classList.remove('active');
+        currentDirInput = null;
+    }
+
+    async function loadDirTree(path) {
+        const list = document.getElementById('dirTreeList');
+        const currentLabel = document.getElementById('dirTreeCurrent');
+        currentLabel.textContent = path;
+        list.innerHTML = '<div class="dir-tree-empty"><span class="spinner"></span> 加载中...</div>';
+
+        try {
+            const resp = await fetch('/api/list_dirs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                list.innerHTML = `<div class="dir-tree-empty">加载失败: ${data.error}</div>`;
+                return;
+            }
+
+            currentLabel.textContent = data.current;
+
+            let html = '';
+            // Parent directory
+            if (data.parent) {
+                html += `
+                    <div class="dir-tree-item dir-tree-up" onclick="loadDirTree('${escapePath(data.parent)}')">
+                        <span class="dir-icon">📁</span>
+                        <span class="dir-name">.. (上级目录)</span>
+                    </div>
+                `;
+            }
+
+            if (data.dirs.length === 0) {
+                html += '<div class="dir-tree-empty">此目录下没有子文件夹</div>';
+            } else {
+                data.dirs.forEach(d => {
+                    html += `
+                        <div class="dir-tree-item">
+                            <span class="dir-icon">📁</span>
+                            <span class="dir-name" onclick="loadDirTree('${escapePath(d.path)}')" title="${d.path.replace(/'/g, '&apos;')}">${d.name}</span>
+                            <button class="btn btn-outline dir-select-btn" onclick="selectDir('${escapePath(d.path)}')">选择</button>
+                        </div>
+                    `;
+                });
+            }
+
+            // Also show current directory as selectable
+            html += `
+                <div style="border-top:1px solid var(--border);padding:8px;text-align:center;">
+                    <button class="btn btn-primary" onclick="selectDir('${escapePath(data.current)}')" style="width:100%;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/></svg>
+                        选择当前目录
+                    </button>
+                </div>
+            `;
+
+            list.innerHTML = html;
+        } catch (e) {
+            list.innerHTML = `<div class="dir-tree-empty">加载失败: ${e.message}</div>`;
+        }
+    }
+
+    function selectDir(path) {
+        if (!currentDirInput) return;
+        const input = document.getElementById(currentDirInput);
+        input.value = path;
+
+        // Sync both inputs if it's the main scan dir
+        if (currentDirInput === 'scanDir' || currentDirInput === 'organizeDir') {
+            document.getElementById('scanDir').value = path;
+            document.getElementById('organizeDir').value = path;
+        }
+
+        closeDirTree();
+        showToast('已选择: ' + path, 'info');
+    }
+</script>
+
+</body>
+</html>
