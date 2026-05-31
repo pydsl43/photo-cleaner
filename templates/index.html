@@ -1012,15 +1012,19 @@
         document.getElementById('statCleanable').textContent = results.similar_count - results.similar_groups;
         document.getElementById('statsBar').style.display = 'flex';
 
+        // Count RAW+JPG pairs
+        const pairs = results.raw_jpg_pairs || [];
+        const pairInfo = pairs.length > 0 ? ` · ${pairs.length} 组 RAW+JPG 配对已跳过` : '';
+
         const area = document.getElementById('groupsArea');
         area.innerHTML = '';
 
-        if (results.groups.length === 0) {
+        if (results.groups.length === 0 && pairs.length === 0) {
             area.innerHTML = `
                 <div class="empty-state">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
                     <h3>没有发现相似照片 🎉</h3>
-                    <p>当前目录下的所有照片都是独一无二的，没有找到相似的照片。</p>
+                    <p>当前目录下的所有照片都是独一无二的${pairInfo}。</p>
                 </div>
             `;
             return;
@@ -1078,6 +1082,31 @@
 
             area.appendChild(card);
         });
+
+        // Show RAW+JPG pairs section
+        if (pairs.length > 0) {
+            const pairSection = document.createElement('div');
+            pairSection.innerHTML = `
+                <div class="group-card" style="border-color:var(--accent);opacity:0.85;">
+                    <div class="group-header">
+                        <div class="group-info">
+                            <strong>📷 RAW+JPG 配对</strong>
+                            <span class="group-count">${pairs.length} 组 · 自动保留 RAW，跳过相似检测</span>
+                        </div>
+                    </div>
+                    <div style="padding:8px 16px 12px;font-size:13px;color:var(--text-muted);">
+                        <p>以下照片同时存在 RAW 和 JPG 版本，系统已自动识别为配对，不会归入相似分组。</p>
+                        <ul style="margin-top:8px;padding-left:20px;line-height:1.8;">
+                            ${pairs.slice(0, 20).map(p =>
+                                `<li>${p.raw.split('/').pop()} ↔ ${p.jpg.split('/').pop()}</li>`
+                            ).join('')}
+                            ${pairs.length > 20 ? `<li style="color:var(--accent-light);">...还有 ${pairs.length - 20} 组</li>` : ''}
+                        </ul>
+                    </div>
+                </div>
+            `;
+            area.appendChild(pairSection);
+        }
 
         document.getElementById('actionBar').style.display = 'block';
     }

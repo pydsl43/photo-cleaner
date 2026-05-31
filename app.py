@@ -205,17 +205,52 @@ def pick_keep_index(group_paths, strategy, hashes):
     return sizes.index(max(sizes))
 
 
+def is_raw_jpg_pair(path_a, path_b):
+    """Check if two paths are RAW+JPG pair of the same photo (same stem, different ext)."""
+    p1 = Path(path_a)
+    p2 = Path(path_b)
+    return (p1.stem == p2.stem and
+            p1.suffix.lower() in RAW_EXTENSIONS and
+            p2.suffix.lower() not in RAW_EXTENSIONS,
+            p1.stem == p2.stem and
+            p2.suffix.lower() in RAW_EXTENSIONS and
+            p1.suffix.lower() not in RAW_EXTENSIONS)
+
+
 def cluster_similar(hashes, threshold, strategy="largest"):
     """Group similar images based on hash similarity.
 
+    Automatically excludes RAW+JPG pairs of the same filename stem.
     Returns list of groups, where each group is a dict:
       {"files": [path, ...], "keep_index": int}
     """
     used = set()
     groups = []
+    raw_jpg_pairs = []
 
     all_paths = list(hashes.keys())
 
+    # First pass: identify RAW+JPG pairs
+    for i, path_a in enumerate(all_paths):
+        if i in used:
+            continue
+        for j in range(i + 1, len(all_paths)):
+            if j in used:
+                continue
+            path_b = all_paths[j]
+            ab_is_pair, ba_is_pair = is_raw_jpg_pair(path_a, path_b)
+            if ab_is_pair:
+                raw_jpg_pairs.append((path_a, path_b))
+                used.add(i)
+                used.add(j)
+                break
+            elif ba_is_pair:
+                raw_jpg_pairs.append((path_b, path_a))
+                used.add(i)
+                used.add(j)
+                break
+
+    # Second pass: cluster remaining (non-paired) images
     for i, path_a in enumerate(all_paths):
         if i in used:
             continue
@@ -236,7 +271,7 @@ def cluster_similar(hashes, threshold, strategy="largest"):
             keep_idx = pick_keep_index(group, strategy, hashes)
             groups.append({"files": group, "keep_index": keep_idx})
 
-    return groups
+    return groups, raw_jpg_pairs
 
 
 def scan_directory(root_dir, threshold, strategy="largest", progress_callback=None):
@@ -269,11 +304,12 @@ def scan_directory(root_dir, threshold, strategy="largest", progress_callback=No
     if progress_callback:
         progress_callback(total, total, "clustering")
 
-    groups = cluster_similar(hashes, threshold, strategy)
+    groups, raw_jpg_pairs = cluster_similar(hashes, threshold, strategy)
 
     similar_count = sum(len(g["files"]) for g in groups)
     return {
         "groups": groups,
+        "raw_jpg_pairs": [{"raw": r, "jpg": j} for r, j in raw_jpg_pairs],
         "total": total,
         "hashed": len(hashes),
         "similar_groups": len(groups),
