@@ -5,6 +5,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: ${{ matrix.os }}
@@ -33,7 +36,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           pyinstaller --onefile --name "PhotoCleaner" --add-data "templates;templates" --hidden-import flask --hidden-import PIL --hidden-import PIL.Image --hidden-import PIL.ImageOps --hidden-import PIL.ExifTags --hidden-import imagehash --hidden-import numpy --hidden-import scipy --hidden-import scipy.ndimage --hidden-import PyWavelets --hidden-import webview --hidden-import webview.platforms.win32 --hidden-import bottle --console main.py
-          mkdir artifacts
+          mkdir -p artifacts
           copy dist\PhotoCleaner.exe artifacts\
         shell: cmd
 
@@ -51,8 +54,63 @@ jobs:
           mkdir -p artifacts
           cp dist/PhotoCleaner artifacts/
 
-      - name: 上传产物
+      - name: 重命名产物
+        shell: bash
+        run: |
+          cd artifacts
+          case "${{ runner.os }}" in
+            Windows) mv PhotoCleaner.exe PhotoCleaner-Windows-x86_64.exe ;;
+            macOS)   mv PhotoCleaner PhotoCleaner-macOS-x86_64 ;;
+            Linux)   mv PhotoCleaner PhotoCleaner-Linux-x86_64 ;;
+          esac
+
+      - name: 上传构建产物 (Actions)
         uses: actions/upload-artifact@v4
         with:
           name: PhotoCleaner-${{ runner.os }}
           path: artifacts/
+
+  release:
+    name: 汇总发布到 Release
+    needs: [build]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: 下载所有构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: all-artifacts
+
+      - name: 整理产物到 flat 目录
+        run: |
+          mkdir -p release-files
+          find all-artifacts -type f -exec cp {} release-files/ \;
+          ls -la release-files/
+
+      - name: 创建/更新 Release
+        uses: ncipollo/release-action@v1
+        with:
+          name: Photo Cleaner 自动构建
+          tag: latest
+          commit: ${{ github.sha }}
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: release-files/*
+          omitBody: false
+          body: |
+            ## Photo Cleaner 自动构建
+            
+            | 平台 | 下载 |
+            |------|------|
+            | 🪟 Windows | `PhotoCleaner-Windows-x86_64.exe` |
+            | 🍎 macOS | `PhotoCleaner-macOS-x86_64` |
+            | 🐧 Linux | `PhotoCleaner-Linux-x86_64` |
+            
+            ### 使用说明
+            - 下载对应平台的文件后**直接双击运行**，无需安装 Python
+            - Windows 首次运行时可能提示「Windows Defender 已保护你的电脑」，点击「更多信息」→「仍要运行」即可
+            - macOS 需在终端执行 `chmod +x PhotoCleaner-macOS-x86_64 && ./PhotoCleaner-macOS-x86_64`，或右键打开
+            - 所有操作均在废纸篓/回收站中可恢复
+            
+            ⚡ 提交: ${{ github.sha }}

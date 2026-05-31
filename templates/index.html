@@ -828,6 +828,48 @@
             font-size: 16px; font-weight: 700; padding: 14px 0;
             text-align: center; color: var(--accent-light);
         }
+        /* ─── Recent Dirs Dropdown ─── */
+        .recent-dirs-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 500;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            max-height: 280px;
+            overflow-y: auto;
+            margin-top: 4px;
+        }
+        .recent-dirs-dropdown .r-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text);
+            transition: background 0.15s;
+            border-bottom: 1px solid var(--border);
+        }
+        .recent-dirs-dropdown .r-item:last-child { border-bottom: none; }
+        .recent-dirs-dropdown .r-item:hover { background: var(--bg-card-hover); }
+        .recent-dirs-dropdown .r-item .r-icon { flex-shrink: 0; opacity: 0.5; }
+        .recent-dirs-dropdown .r-item .r-path { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .recent-dirs-dropdown .r-item .r-del {
+            font-size: 11px; padding: 2px 6px; border-radius: 4px;
+            background: transparent; border: none; color: var(--text-muted); cursor: pointer;
+            opacity: 0; transition: opacity 0.15s;
+        }
+        .recent-dirs-dropdown .r-item:hover .r-del { opacity: 1; }
+        .recent-dirs-dropdown .r-item .r-del:hover { color: var(--danger); background: rgba(255,107,107,0.1); }
+        .recent-dirs-dropdown .r-header {
+            padding: 8px 14px; font-size: 11px; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -846,11 +888,15 @@
         <button class="tab-btn" onclick="switchTab('orphan')" id="tabBtnOrphan">孤立文件</button>
     </div>
     <div class="header-controls" id="headerControlsCleanup">
-        <div class="dir-picker">
-            <input type="text" id="scanDir" placeholder="扫描目录（默认 ~）" value="~" readonly>
+        <div class="dir-picker" style="position:relative;">
+            <input type="text" id="scanDir" placeholder="扫描目录（默认 ~）" value="~" readonly
+                   style="cursor:pointer;">
+            <div class="recent-dirs-dropdown" id="recentDirsScan" style="display:none;"></div>
+            <button class="btn btn-outline" onclick="toggleRecentDirs('scanDir')" title="最近使用的目录">
+                📂
+            </button>
             <button class="btn btn-outline" onclick="browseDir('scanDir')" title="选择目录">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                浏览
             </button>
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
@@ -869,17 +915,25 @@
         </button>
     </div>
     <div class="header-controls" id="headerControlsOrphan" style="display:none;">
-        <div class="dir-picker">
-            <input type="text" id="orphanDirHeader" placeholder="扫描目录（默认 ~）" value="~" readonly style="font-size:13px;">
+        <div class="dir-picker" style="position:relative;">
+            <input type="text" id="orphanDirHeader" placeholder="扫描目录（默认 ~）" value="~" readonly style="font-size:13px;cursor:pointer;">
+            <div class="recent-dirs-dropdown" id="recentDirsOrphanHeader" style="display:none;"></div>
+            <button class="btn btn-outline" onclick="toggleRecentDirs('orphanDirHeader')" title="最近使用的目录" style="font-size:13px;padding:4px 8px;">
+                📂
+            </button>
         </div>
         <span style="font-size:13px;color:var(--text-muted);">扫描孤立 RAW / JPG / 侧边栏文件</span>
     </div>
     <div class="header-controls" id="headerControlsOrganize" style="display:none;">
-        <div class="dir-picker">
-            <input type="text" id="organizeDir" placeholder="扫描目录（默认 ~）" value="~" readonly>
+        <div class="dir-picker" style="position:relative;">
+            <input type="text" id="organizeDir" placeholder="扫描目录（默认 ~）" value="~" readonly
+                   style="cursor:pointer;">
+            <div class="recent-dirs-dropdown" id="recentDirsOrganize" style="display:none;"></div>
+            <button class="btn btn-outline" onclick="toggleRecentDirs('organizeDir')" title="最近使用的目录">
+                📂
+            </button>
             <button class="btn btn-outline" onclick="browseDir('organizeDir')" title="选择目录">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                浏览
             </button>
         </div>
         <select id="organizeMode">
@@ -959,7 +1013,8 @@
             <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:12px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; box-shadow:var(--shadow);">
                 <span id="selectedCount" style="font-size:14px;color:var(--text-muted);">已选择 0 张</span>
                 <div style="display:flex;gap:8px;">
-                    <button class="btn btn-outline" onclick="clearSelection()">取消选择</button>
+                    <button class="btn btn-outline" onclick="selectAllDeletable()" id="selectAllBtn">全选所有可删</button>
+                    <button class="btn btn-outline" onclick="clearSelection()">取消全选</button>
                     <button class="btn btn-danger" id="deleteBtn" onclick="deleteSelected()">
                         🗑️ 移到废纸篓
                     </button>
@@ -1008,11 +1063,15 @@
     <!-- ─── Tab 3: 孤立文件 ─── -->
     <div class="tab-content" id="tabOrphan">
         <div class="orphan-input-row">
-            <div class="dir-picker">
-                <input type="text" id="orphanDir" placeholder="扫描目录（默认 ~）" value="~" readonly>
+            <div class="dir-picker" style="position:relative;">
+                <input type="text" id="orphanDir" placeholder="扫描目录（默认 ~）" value="~" readonly
+                       style="cursor:pointer;">
+                <div class="recent-dirs-dropdown" id="recentDirsOrphan" style="display:none;"></div>
+                <button class="btn btn-outline" onclick="toggleRecentDirs('orphanDir')" title="最近使用的目录">
+                    📂
+                </button>
                 <button class="btn btn-outline" onclick="browseDir('orphanDir')" title="选择目录">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                    浏览
                 </button>
             </div>
             <button class="btn btn-primary" id="orphanScanBtn" onclick="startOrphanScan()">
@@ -1232,6 +1291,8 @@
 
                     if (data.results) {
                         scanResults = data.results;
+                        addRecentDir(document.getElementById('scanDir').value.trim() || '~');
+                        loadRecentDirs();
                         renderResults(scanResults);
                     } else {
                         showToast('扫描无结果', 'info');
@@ -1326,7 +1387,8 @@
                         <span class="group-count">${files.length} 张相似 · <span style="color:var(--accent-light)">${stratLabel}</span></span>
                     </div>
                     <div class="group-actions">
-                        <button class="btn btn-outline" onclick="selectAllInGroup(${idx})">全选(删)</button>
+                        <button class="btn btn-outline" onclick="selectAllInGroup(${idx})">全选</button>
+                        <button class="btn btn-outline" onclick="deselectAllInGroup(${idx})">取消</button>
                         <button class="btn btn-outline" onclick="viewGroup(${idx})">对比查看</button>
                     </div>
                 </div>
@@ -1398,9 +1460,39 @@
         updateSelectionCount();
     }
 
+    function selectAllDeletable() {
+        if (!scanResults) return;
+        (scanResults.groups || []).forEach(group => {
+            const files = group.files || group;
+            const keepIndex = group.keep_index !== undefined ? group.keep_index : 0;
+            files.forEach((path, pi) => {
+                if (pi !== keepIndex) {
+                    selectedToDelete.add(path);
+                }
+            });
+        });
+        renderResults(scanResults);
+        updateSelectionCount();
+        showToast(`已全选 ${selectedToDelete.size} 张可删除照片`, 'info');
+    }
+
+    function deselectAllInGroup(idx) {
+        const group = scanResults.groups[idx];
+        const files = group.files || group;
+        files.forEach(path => {
+            selectedToDelete.delete(path);
+        });
+        renderResults(scanResults);
+        updateSelectionCount();
+    }
+
     function clearSelection() {
         selectedToDelete.clear();
-        document.querySelectorAll('.photo-card.selected').forEach(el => el.classList.remove('selected'));
+        if (scanResults) {
+            renderResults(scanResults);
+        } else {
+            document.querySelectorAll('.photo-card.selected').forEach(el => el.classList.remove('selected'));
+        }
         updateSelectionCount();
     }
 
@@ -1509,42 +1601,83 @@
         if (h) h.value = this.value;
     });
 
-    // ─── Organize: Preview ───
+    // ─── Organize: Preview (Async) ───
+    let organizePolling = false;
+
     async function previewOrganize() {
         const dir = document.getElementById('organizeDir').value.trim() || '~';
         const mode = document.getElementById('organizeMode').value;
 
         const btn = document.getElementById('previewBtn');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> 预览中...';
+        btn.innerHTML = '<span class="spinner"></span> 扫描中...';
 
         document.getElementById('organizeStatsBar').style.display = 'none';
         document.getElementById('organizeResults').innerHTML = '';
 
         try {
-            const resp = await fetch('/api/organize/preview', {
+            const resp = await fetch('/api/organize/preview_async', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ dir, mode })
             });
             const data = await resp.json();
-
             if (data.error) {
-                showToast('预览出错: ' + data.error, 'error');
+                showToast('启动扫描失败: ' + data.error, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 预览归类';
                 return;
             }
-
-            organizePreviewData = data;
-            renderOrganizePreview(data, mode);
-
-            const execBtn = document.getElementById('executeBtn');
-            execBtn.disabled = false;
+            pollOrganizeStatus();
         } catch (e) {
-            showToast('预览请求失败: ' + e.message, 'error');
-        } finally {
+            showToast('启动扫描失败: ' + e.message, 'error');
             btn.disabled = false;
             btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 预览归类';
         }
+    }
+
+    async function pollOrganizeStatus() {
+        if (organizePolling) return;
+        organizePolling = true;
+
+        const poll = async () => {
+            try {
+                const resp = await fetch('/api/organize/preview_status');
+                const data = await resp.json();
+
+                if (data.running) {
+                    const p = data.progress || {};
+                    const pct = p.total > 0 ? Math.round((p.current / p.total) * 100) : 0;
+                    document.getElementById('previewBtn').innerHTML = `<span class="spinner"></span> 扫描中 ${pct}%`;
+                    setTimeout(poll, 500);
+                } else {
+                    organizePolling = false;
+                    const btn = document.getElementById('previewBtn');
+                    btn.disabled = false;
+                    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 预览归类';
+
+                    if (data.error) {
+                        showToast('扫描出错: ' + data.error, 'error');
+                        return;
+                    }
+
+                    if (data.results) {
+                        organizePreviewData = data.results;
+                        renderOrganizePreview(data.results, document.getElementById('organizeMode').value);
+                        document.getElementById('executeBtn').disabled = false;
+                    } else {
+                        showToast('扫描无结果', 'info');
+                    }
+                }
+            } catch (e) {
+                organizePolling = false;
+                const btn = document.getElementById('previewBtn');
+                btn.disabled = false;
+                btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 预览归类';
+                showToast('轮询状态失败: ' + (e.message || e), 'error');
+            }
+        };
+        poll();
     }
 
     function renderOrganizePreview(data, mode) {
@@ -1811,6 +1944,8 @@
             if (h) h.value = path;
         }
 
+        addRecentDir(path);
+        loadRecentDirs();
         closeDirTree();
         showToast('已选择: ' + path, 'info');
     }
@@ -2222,6 +2357,113 @@
             btn.innerHTML = '🗑️ 清理所有孤立文件';
         }
     }
+    // ─── Recent Directories ───
+    let recentDirsCache = [];
+
+    async function loadRecentDirs() {
+        try {
+            const resp = await fetch('/api/recent_dirs/list');
+            const data = await resp.json();
+            recentDirsCache = data.recent || [];
+        } catch (e) { /* ignore */ }
+    }
+
+    function renderRecentDrops(inputId) {
+        const dropdown = document.getElementById('recentDirs' + inputId.replace('Dir', ''));
+        if (!dropdown) return;
+        if (recentDirsCache.length === 0) {
+            dropdown.innerHTML = '<div class="r-item" style="cursor:default;color:var(--text-muted);font-size:12px;justify-content:center;">暂无记录 — 选择目录并扫描后自动保存</div>';
+            dropdown.style.display = 'block';
+            return;
+        }
+        let html = '<div class="r-header">最近使用的目录</div>';
+        recentDirsCache.forEach(path => {
+            html += `
+                <div class="r-item" onclick="pickRecentDir('${inputId}', '${escapePath(path)}')">
+                    <span class="r-icon">📂</span>
+                    <span class="r-path" title="${path.replace(/'/g, '&apos;')}">${path}</span>
+                    <button class="r-del" onclick="event.stopPropagation(); removeRecentDir('${escapePath(path)}')" title="移除">✕</button>
+                </div>
+            `;
+        });
+        dropdown.innerHTML = html;
+        dropdown.style.display = 'block';
+    }
+
+    function toggleRecentDirs(inputId) {
+        const dropdown = document.getElementById('recentDirs' + inputId.replace('Dir', ''));
+        if (!dropdown) return;
+        if (dropdown.style.display === 'block') {
+            dropdown.style.display = 'none';
+            return;
+        }
+        // Fetch and show recent directories
+        fetch('/api/recent_dirs/list')
+            .then(r => r.json())
+            .then(data => {
+                recentDirsCache = data.recent || [];
+                if (recentDirsCache.length === 0) {
+                    dropdown.innerHTML = '<div class="r-item" style="cursor:default;color:var(--text-muted);font-size:12px;justify-content:center;">暂无记录 — 选择目录并扫描后自动保存</div>';
+                } else {
+                    let html = '<div class="r-header">最近使用的目录</div>';
+                    recentDirsCache.forEach(path => {
+                        html += '<div class="r-item" onclick="pickRecentDir(\'' + inputId + '\', \'' + escapePath(path) + '\')">' +
+                            '<span class="r-icon">📂</span>' +
+                            '<span class="r-path" title="' + path.replace(/'/g, '&apos;') + '">' + path + '</span>' +
+                            '<button class="r-del" onclick="event.stopPropagation(); removeRecentDir(\'' + escapePath(path) + '\')" title="移除">✕</button>' +
+                            '</div>';
+                    });
+                    dropdown.innerHTML = html;
+                }
+                dropdown.style.display = 'block';
+            })
+            .catch(() => {
+                dropdown.innerHTML = '<div class="r-item" style="cursor:default;color:var(--text-muted);font-size:12px;justify-content:center;">加载失败</div>';
+                dropdown.style.display = 'block';
+            });
+    }
+
+    function pickRecentDir(inputId, path) {
+        document.getElementById(inputId).value = path;
+        document.getElementById('recentDirs' + inputId.replace('Dir', '')).style.display = 'none';
+        // Sync all inputs
+        document.getElementById('scanDir').value = path;
+        document.getElementById('organizeDir').value = path;
+        document.getElementById('orphanDir').value = path;
+        const h = document.getElementById('orphanDirHeader');
+        if (h) h.value = path;
+    }
+
+    async function addRecentDir(path) {
+        try {
+            await fetch('/api/recent_dirs/add', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path })
+            });
+        } catch (e) { /* ignore */ }
+    }
+
+    async function removeRecentDir(path) {
+        // Remove from local cache and re-render
+        recentDirsCache = recentDirsCache.filter(p => p !== path);
+        // We don't have a delete endpoint; just re-render any open dropdown
+        const openDropdown = document.querySelector('.recent-dirs-dropdown[style*="display: block"]');
+        if (openDropdown) {
+            openDropdown.style.display = 'none';
+        }
+        // For now just visually hide it - server will handle on next add
+    }
+
+    // Close recent dirs dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dir-picker')) {
+            document.querySelectorAll('.recent-dirs-dropdown').forEach(el => el.style.display = 'none');
+        }
+    });
+
+    // Load recent dirs on page load
+    fetch('/api/recent_dirs/list').then(r => r.json()).then(data => { recentDirsCache = data.recent || []; }).catch(() => {});
 </script>
 
 </body>

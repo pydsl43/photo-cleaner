@@ -62,6 +62,9 @@ scan_state = {
     "error": None,
 }
 
+# Organize scan state for async progress polling
+_organize_state = {}  # { "running": bool, "progress": {...}, "results": {...} }
+
 # ─── RAW image support ───────────────────────────────────────────────────────
 
 RAW_EXTENSIONS = {'.arw', '.srf', '.sr2', '.srw',
@@ -138,15 +141,36 @@ def hamming_similarity(hash1, hash2, hash_size=HASH_SIZE):
 # ─── Scanning Logic ────────────────────────────────────────────────────────────
 
 def find_images(root_dir):
-    """Recursively find all image files in a directory."""
+    """Recursively find all image files in a directory.
+    Skips hidden directories and common system folders for speed."""
     images = []
     root = Path(root_dir).expanduser().resolve()
     if not root.exists():
         return images
 
-    for entry in root.rglob("*"):
-        if entry.suffix.lower() in IMAGE_EXTENSIONS:
-            images.append(str(entry))
+    # Directories to always skip (case-insensitive)
+    SKIP_DIRS = {'.git', '__pycache__', 'node_modules', '.Trash',
+                 '.cache', '.local', '.config', '.npm', '.cargo',
+                 '.rustup', '.gem', '.bundle', 'Library', '.Trashes',
+                 '$RECYCLE.BIN', 'System Volume Information',
+                 'venv', '.venv', 'env', '.env', 'dist', 'build',
+                 '.tox', '.mypy_cache', '.pytest_cache', '.idea', '.vscode', '.dropbox.cache'}
+
+    try:
+        for entry in root.rglob("*"):
+            # Skip hidden directories and their contents
+            try:
+                if entry.is_dir():
+                    # Don't recurse into hidden dirs or skip dirs
+                    if entry.name.startswith('.') or entry.name in SKIP_DIRS:
+                        continue  # skip this directory entirely
+                if entry.is_file() and entry.suffix.lower() in IMAGE_EXTENSIONS:
+                    images.append(str(entry))
+            except (PermissionError, OSError):
+                continue
+    except (PermissionError, OSError):
+        pass
+
     return images
 
 
@@ -532,6 +556,66 @@ def organize_preview():
     return jsonify(result)
 
 
+@app.route("/api/organize/preview_async", methods=["POST"])
+def organize_preview_async():
+    """Start organize preview asynchronously with progress."""
+    global _organize_state
+    data = request.get_json(silent=True) or {}
+    scan_dir = data.get("dir", SCAN_DIR)
+    mode = data.get("mode", "date")
+
+    def _run_organize(scan_dir, mode):
+        global _organize_state
+        try:
+            planner = OrganizePlanner(scan_dir)
+            total = len(planner.images)
+            _organize_state["progress"] = {"phase": "scanning", "current": 0, "total": total}
+
+            # The planner's plan_by_date/plan_by_location already does the work
+            if mode == "location":
+                result = planner.plan_by_location()
+            else:
+                result = planner.plan_by_date()
+
+            _organize_state["progress"] = {"phase": "done", "current": total, "total": total}
+            _organize_state["results"] = result
+        except Exception as e:
+            _organize_state["results"] = {"error": str(e)}
+        finally:
+            _organize_state["running"] = False
+
+    if _organize_state.get("running"):
+        return jsonify({"error": "An organize preview is already running"}), 400
+
+    _organize_state = {"running": True, "progress": {"phase": "starting", "current": 0, "total": 0}, "results": None}
+
+    t = threading.Thread(target=_run_organize, args=(scan_dir, mode), daemon=True)
+    t.start()
+
+    return jsonify({"status": "started"})
+
+
+@app.route("/api/organize/preview_status", methods=["GET"])
+def organize_preview_status():
+    global _organize_state
+    if _organize_state.get("running"):
+        return jsonify({
+            "running": True,
+            "progress": _organize_state.get("progress", {})
+        })
+    results = _organize_state.get("results")
+    if results is None:
+        return jsonify({"running": False, "error": "尚未完成"})
+    error = results.get("error") if isinstance(results, dict) else None
+    if error:
+        return jsonify({"running": False, "error": error})
+    # success - return results inline
+    return jsonify({
+        "running": False,
+        "results": results,
+    })
+
+
 @app.route("/api/organize/execute", methods=["POST"])
 def organize_execute():
     """Execute organizing: copy/move files into categorized folders."""
@@ -719,13 +803,15 @@ def cull_start():
     _cull_state["current_idx"] = 0
     _cull_state["decisions"] = {}
 
-    if len(results["groups"]) == 0:
-        return jsonify({"total": 0, "done": True})
+    groups = results["groups"]
+    if len(groups) == 0:
+        return jsonify({"total": 0, "done": True, "groups": []})
 
     return jsonify({
-        "total": len(results["groups"]),
+        "total": len(groups),
         "current": 0,
-        "group": _format_cull_group(results["groups"][0], 0),
+        "group": _format_cull_group(groups[0], 0),
+        "groups": [_format_cull_group(g, i) for i, g in enumerate(groups)],
     })
 
 
@@ -1034,6 +1120,49 @@ def browse_directory():
         return jsonify({"path": "", "cancelled": True})
     except Exception:
         return jsonify({"error": "No directory picker available"}), 501
+
+
+# ─── Recent Directories ────────────────────────────────────────────
+
+RECENT_DIRS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".recent_dirs.json")
+RECENT_DIRS_MAX = 10
+
+@app.route("/api/recent_dirs/add", methods=["POST"])
+def recent_dirs_add():
+    data = request.get_json(silent=True) or {}
+    path = data.get("path", "").strip()
+    if not path:
+        return jsonify({"error": "No path provided"}), 400
+
+    recent = []
+    if os.path.exists(RECENT_DIRS_FILE):
+        try:
+            with open(RECENT_DIRS_FILE, "r") as f:
+                recent = json.load(f)
+        except:
+            recent = []
+
+    # Remove existing entry, add to front
+    recent = [p for p in recent if p != path]
+    recent.insert(0, path)
+    recent = recent[:RECENT_DIRS_MAX]
+
+    with open(RECENT_DIRS_FILE, "w") as f:
+        json.dump(recent, f)
+
+    return jsonify({"recent": recent})
+
+
+@app.route("/api/recent_dirs/list", methods=["GET"])
+def recent_dirs_list():
+    if not os.path.exists(RECENT_DIRS_FILE):
+        return jsonify({"recent": []})
+    try:
+        with open(RECENT_DIRS_FILE, "r") as f:
+            recent = json.load(f)
+    except:
+        recent = []
+    return jsonify({"recent": recent})
 
 
 @app.route("/api/list_dirs", methods=["POST"])
